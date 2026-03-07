@@ -1,0 +1,29 @@
+# ─── Node modules ──────────────────────────────────────────────
+node_modules/
+
+# ─── Environment variables (NEVER commit these!) ──────────────
+.env
+.env.local
+.env.*.local
+blockchain/.env
+
+# ─── Hardhat build artifacts ───────────────────────────────────
+blockchain/artifacts/
+blockchain/cache/
+blockchain/typechain-types/
+blockchain/deployments/
+
+# ─── Next.js build ─────────────────────────────────────────────
+frontend/.next/
+frontend/out/
+
+# ─── OS / editor ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# ─── Coverage ───────────────────────────────────────────────────
+coverage/
+coverage.json

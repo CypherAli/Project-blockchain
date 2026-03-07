@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #e8e8e8;
+  --green: #00ff88;
+  --green-dim: #00cc6a;
+  --green-bg: rgba(0, 255, 136, 0.06);
+  --card-bg: #111111;
+  --card-border: #1e1e1e;
+  --card-border-hover: #2a2a2a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Pumpfun green glow effect */
+.glow-green {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.15);
+}
+
+.glow-green-sm {
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #111;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Ticker animation for live feed */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.feed-item {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Progress bar shimmer */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.progress-bar {
+  background: linear-gradient(
+    90deg,
+    #00ff88 0%,
+    #00ffcc 50%,
+    #00ff88 100%
+  );
+  background-size: 200% 100%;
+}
