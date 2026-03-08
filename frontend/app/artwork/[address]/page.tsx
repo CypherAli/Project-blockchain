@@ -1,63 +1,92 @@
-"use client";
+'use client';
 
-import { use, useState } from "react";
-import Link from "next/link";
-import { useArtworkInfo, useTradeHistory, useShareBalance } from "@/lib/hooks";
-import TradePanel from "@/components/TradePanel";
-import PriceChart from "@/components/PriceChart";
-import { formatEth, getIpfsUrlsForFallback, getExplorerUrl, graduationProgress, shortAddress, timeAgo } from "@/lib/contracts";
-import { useQueryClient } from "@tanstack/react-query";
-import { ArtworkDetailSkeleton, ChartSkeleton } from "@/components/ui/Skeleton";
-import { NotFound, AsyncError } from "@/components/ui/ErrorBoundary";
+import { use, useState } from 'react';
+import Link from 'next/link';
+import { useArtworkInfo, useTradeHistory, useShareBalance } from '@/lib/hooks';
+import TradePanel from '@/components/TradePanel';
+import PriceChart from '@/components/PriceChart';
+import {
+  formatEth, getIpfsUrlsForFallback, getExplorerUrl,
+  graduationProgress, shortAddress, timeAgo,
+} from '@/lib/contracts';
+import { useQueryClient } from '@tanstack/react-query';
+import { ArtworkDetailSkeleton, ChartSkeleton } from '@/components/ui/Skeleton';
+import { NotFound, AsyncError } from '@/components/ui/ErrorBoundary';
 
 interface Props {
   params: Promise<{ address: string }>;
 }
 
+// ─── Stat box ─────────────────────────────────────────────────────────────────
+
+function StatBox({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div style={{
+      background: 'var(--surface-2)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-md)', padding: '8px 12px',
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: accent ? 'var(--green)' : 'var(--text)' }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+// ─── Section card ─────────────────────────────────────────────────────────────
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-lg)', padding: 16,
+    }}>
+      <div style={{
+        fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+        color: 'var(--text-muted)', letterSpacing: '0.08em',
+        textTransform: 'uppercase', marginBottom: 12,
+      }}>
+        {title}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function ArtworkPage({ params }: Props) {
-  const { address } = use(params);
-  const artworkAddress = address as `0x${string}`;
-  const queryClient = useQueryClient();
+  const { address }      = use(params);
+  const artworkAddress   = address as `0x${string}`;
+  const queryClient      = useQueryClient();
 
   const { data: artwork, isLoading, isError, error, refetch } = useArtworkInfo(artworkAddress);
   const { data: events = [] } = useTradeHistory(artworkAddress, 50);
-  const { data: balance } = useShareBalance(artworkAddress);
+  const { data: balance }     = useShareBalance(artworkAddress);
 
-  // IPFS multi-gateway fallback for artwork image
-  const ipfsUrls = getIpfsUrlsForFallback(artwork?.ipfsCID ?? "");
-  const [imgIndex, setImgIndex] = useState(0);
+  // IPFS multi-gateway fallback
+  const ipfsUrls = getIpfsUrlsForFallback(artwork?.ipfsCID ?? '');
+  const [imgIdx, setImgIdx] = useState(0);
   const handleImgError = () => {
-    if (imgIndex < ipfsUrls.length - 1) setImgIndex((i) => i + 1);
-    else setImgIndex(ipfsUrls.length);
+    if (imgIdx < ipfsUrls.length - 1) setImgIdx((i) => i + 1);
+    else setImgIdx(ipfsUrls.length);
   };
-  const imgSrc =
-    artwork?.ipfsCID && imgIndex < ipfsUrls.length
-      ? ipfsUrls[imgIndex]
-      : `https://picsum.photos/seed/${artworkAddress}/256/256`;
+  const imgSrc = artwork?.ipfsCID && imgIdx < ipfsUrls.length
+    ? ipfsUrls[imgIdx]
+    : `https://picsum.photos/seed/${artworkAddress}/256/256`;
 
   const handleTradeSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ["artworkInfo", artworkAddress] });
-    queryClient.invalidateQueries({ queryKey: ["tradeHistory", artworkAddress] });
-    queryClient.invalidateQueries({ queryKey: ["allArtworks"] });
+    queryClient.invalidateQueries({ queryKey: ['artworkInfo', artworkAddress] });
+    queryClient.invalidateQueries({ queryKey: ['tradeHistory', artworkAddress] });
+    queryClient.invalidateQueries({ queryKey: ['allArtworks'] });
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────────
-  if (isLoading) {
-    return <ArtworkDetailSkeleton />;
-  }
+  if (isLoading) return <ArtworkDetailSkeleton />;
 
-  // ── Error ────────────────────────────────────────────────────────────────────
   if (isError) {
-    return (
-      <AsyncError
-        error={error}
-        onRetry={() => refetch()}
-        context={`artwork ${artworkAddress.slice(0, 8)}…`}
-      />
-    );
+    return <AsyncError error={error} onRetry={() => refetch()} context={`artwork ${artworkAddress.slice(0, 8)}…`} />;
   }
 
-  // ── Not found ────────────────────────────────────────────────────────────────
   if (!artwork) {
     return (
       <NotFound
@@ -69,205 +98,233 @@ export default function ArtworkPage({ params }: Props) {
     );
   }
 
-  const progressPct = graduationProgress(artwork.reserve);
-  const explorerUrl = getExplorerUrl("address", artworkAddress);
+  const progressPct  = graduationProgress(artwork.reserve);
+  const isGraduating = progressPct >= 80 && !artwork.graduated;
+  const explorerUrl  = getExplorerUrl('address', artworkAddress);
 
   return (
-    <div className="space-y-5 font-mono">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs text-[#444]">
-        <Link href="/" className="hover:text-[#00ff88] transition-colors">[home]</Link>
-        <span>/</span>
-        <Link href="/explore" className="hover:text-[#00ff88] transition-colors">[explore]</Link>
-        <span>/</span>
-        <span className="text-[#888] truncate max-w-40">{artwork.name}</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'var(--font-sans)' }}>
+
+      {/* ── Breadcrumb ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+        {[
+          { href: '/',        label: '[home]'    },
+          { href: '/explore', label: '[explore]' },
+        ].map(({ href, label }) => (
+          <span key={href} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Link href={href} style={{ color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--green)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >{label}</Link>
+            <span style={{ color: 'var(--border-hover)' }}>/</span>
+          </span>
+        ))}
+        <span style={{ color: 'var(--text-dim)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {artwork.name}
+        </span>
         {artwork.graduated && (
-          <span className="ml-2 bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-[10px] px-2 py-0.5 rounded">
+          <span style={{
+            background: 'hsl(42 72% 48% / 0.18)', color: 'var(--gold)',
+            border: '1px solid hsl(42 72% 48% / 0.35)', fontSize: 9,
+            padding: '2px 7px', borderRadius: 'var(--r-full)', fontWeight: 700,
+          }}>
             🎓 graduated
           </span>
         )}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* ── Left: image + info ──────────────────────────────────────────── */}
-        <div className="md:col-span-2 space-y-4">
-          {/* Image + title row */}
-          <div className="flex gap-4">
-            <img
-              src={imgSrc}
-              alt={artwork.name}
-              width={128}
-              height={128}
-              className="w-32 h-32 rounded-lg object-cover border border-[#1e1e1e] flex-shrink-0 bg-[#0d0d0d]"
-              onError={handleImgError}
-            />
+      {/* ── Main grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 20 }}>
 
-            <div className="flex-1 min-w-0">
-              <h1 className="text-white font-black text-xl mb-1 truncate">{artwork.name}</h1>
-              <p className="text-[#555] text-xs mb-3">
-                created by{" "}
-                <Link
-                  href={`/profile/${artwork.artist}`}
-                  className="text-[#00ff88] hover:underline"
+        {/* ── Left ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* Image + title */}
+          <div style={{ display: 'flex', gap: 16 }}>
+            <div style={{
+              flexShrink: 0, width: 140, height: 140,
+              borderRadius: 'var(--r-lg)', overflow: 'hidden',
+              border: `2px solid ${artwork.graduated ? 'var(--gold)' : isGraduating ? 'var(--gold-light)' : 'var(--border-hover)'}`,
+              background: 'var(--surface-2)',
+            }}>
+              <img src={imgSrc} alt={artwork.name} width={140} height={140}
+                onError={handleImgError}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h1 style={{
+                fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 800,
+                color: 'var(--text)', margin: 0, marginBottom: 4,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {artwork.name}
+              </h1>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
+                created by{' '}
+                <Link href={`/profile/${artwork.artist}`}
+                  style={{ color: 'var(--teal)', textDecoration: 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                 >
                   {shortAddress(artwork.artist, 8)}
                 </Link>
-                {" "}· {timeAgo(Number(artwork.createdAt))}
-              </p>
+                {' '}· {timeAgo(Number(artwork.createdAt))}
+              </div>
 
-              {/* Key stats grid */}
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "price",         value: `${formatEth(artwork.price, 6)} ETH`,       green: true },
-                  { label: "market cap",    value: `${formatEth(artwork.marketCap, 4)} ETH`,   green: false },
-                  { label: "volume",        value: `${formatEth(artwork.totalVolume, 4)} ETH`, green: false },
-                  { label: "shares minted", value: artwork.supply.toString(),                   green: false },
-                ].map((s) => (
-                  <div key={s.label} className="bg-[#0d0d0d] border border-[#1a1a1a] rounded p-2">
-                    <p className="text-[#444] text-[10px]">{s.label}</p>
-                    <p className={`font-bold text-xs ${s.green ? "text-[#00ff88]" : "text-white"}`}>
-                      {s.value}
-                    </p>
-                  </div>
-                ))}
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                <StatBox label="price"         value={`${formatEth(artwork.price, 6)} Ξ`}       accent />
+                <StatBox label="market cap"    value={`${formatEth(artwork.marketCap, 4)} Ξ`}        />
+                <StatBox label="volume"        value={`${formatEth(artwork.totalVolume, 4)} Ξ`}      />
+                <StatBox label="shares minted" value={artwork.supply.toString()}                      />
               </div>
             </div>
           </div>
 
           {/* Bonding curve progress */}
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4">
-            <div className="flex justify-between text-xs mb-2">
-              <span className="text-[#555]">
-                bonding curve progress ({formatEth(artwork.reserve, 4)} / 24 ETH)
+          <SectionCard title="bonding curve progress">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, marginBottom: 8 }}>
+              <span style={{ color: 'var(--text-dim)' }}>
+                {formatEth(artwork.reserve, 4)} / 24 Ξ reserve
               </span>
-              <span className="text-[#00ff88]">{progressPct.toFixed(1)}%</span>
+              <span style={{ color: isGraduating || artwork.graduated ? 'var(--gold)' : 'var(--green)', fontWeight: 700 }}>
+                {progressPct.toFixed(1)}%
+              </span>
             </div>
-            <div className="w-full bg-[#1a1a1a] rounded-full h-3 overflow-hidden">
+            <div style={{ height: 8, background: 'var(--surface-3)', borderRadius: 'var(--r-full)', overflow: 'hidden' }}>
               <div
-                className="h-full rounded-full progress-bar transition-all"
-                style={{ width: `${Math.max(progressPct, 1)}%` }}
+                className={isGraduating || artwork.graduated ? 'progress-bar-graduating' : 'progress-bar'}
+                style={{ width: `${Math.max(progressPct, 1)}%`, height: '100%' }}
               />
             </div>
-            <p className="text-[#333] text-[10px] mt-2">
-              when reserve reaches 24 ETH, artwork graduates 🎓
-            </p>
-          </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginTop: 6 }}>
+              when reserve reaches 24 Ξ, artwork graduates 🌟
+            </div>
+          </SectionCard>
 
           {/* Price chart */}
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4">
-            <p className="text-[#555] text-xs mb-3">price history</p>
-            {events.length === 0 ? (
-              <ChartSkeleton />
-            ) : (
-              <PriceChart events={events} k={artwork.k} p0={artwork.p0} />
-            )}
-          </div>
+          <SectionCard title="price history">
+            {events.length === 0 ? <ChartSkeleton /> : <PriceChart events={events} k={artwork.k} p0={artwork.p0} />}
+          </SectionCard>
 
           {/* Trade history */}
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4">
-            <p className="text-[#555] text-xs mb-3">
-              trade history ({events.length})
-            </p>
+          <SectionCard title={`trade history (${events.length})`}>
             {events.length === 0 ? (
-              <p className="text-[#333] text-xs text-center py-4">
+              <div style={{ textAlign: 'center', padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
                 no trades yet — be the first!
-              </p>
+              </div>
             ) : (
-              <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
                 {events.slice(0, 30).map((event, i) => (
                   <div
                     key={event.txHash ?? i}
-                    className="flex items-center justify-between text-[11px] py-1 border-b border-[#1a1a1a]"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 11,
+                    }}
                   >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`font-bold ${
-                          event.type === "BUY" ? "text-[#00ff88]" : "text-red-400"
-                        }`}
-                      >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800,
+                        color: event.type === 'BUY' ? 'var(--green)' : 'var(--terra)',
+                      }}>
                         {event.type}
                       </span>
-                      <span className="text-[#555]">
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
                         {shortAddress(event.trader)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-right">
-                      <span className="text-white">{event.shares.toString()} shares</span>
-                      <span className="text-[#444]">{formatEth(event.ethAmount, 5)} ETH</span>
-                      <span className="text-[#333]">{timeAgo(Number(event.timestamp))}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)' }}>
+                      <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{event.shares.toString()} shares</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>{formatEth(event.ethAmount, 5)} Ξ</span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: 9 }}>{timeAgo(Number(event.timestamp))}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </div>
+          </SectionCard>
 
           {/* Contract info */}
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4 text-[11px] space-y-2">
-            <p className="text-[#555] mb-2">contract info</p>
-            <div className="flex justify-between">
-              <span className="text-[#444]">contract address</span>
-              {explorerUrl ? (
-                <a
-                  href={explorerUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#00ff88] hover:underline"
-                >
-                  {artworkAddress.slice(0, 10)}…{artworkAddress.slice(-8)} ↗
-                </a>
-              ) : (
-                <span className="text-[#888]">
-                  {artworkAddress.slice(0, 10)}…{artworkAddress.slice(-8)}
-                </span>
-              )}
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#444]">artist royalties earned</span>
-              <span className="text-yellow-400">{formatEth(artwork.totalRoyalties, 5)} ETH</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#444]">reserve</span>
-              <span className="text-white">{formatEth(artwork.reserve, 5)} ETH</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#444]">k (curve steepness)</span>
-              <span className="text-[#888]">{artwork.k.toString()}</span>
-            </div>
-          </div>
+          <SectionCard title="contract info">
+            {[
+              {
+                label: 'contract address',
+                node: explorerUrl
+                  ? <a href={explorerUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ color: 'var(--teal)', fontFamily: 'var(--font-mono)', fontSize: 11, textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                      onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                    >
+                      {artworkAddress.slice(0, 10)}…{artworkAddress.slice(-8)} ↗
+                    </a>
+                  : <span style={{ color: 'var(--text-dim)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>{artworkAddress.slice(0, 10)}…{artworkAddress.slice(-8)}</span>,
+              },
+              { label: 'artist royalties earned', value: `${formatEth(artwork.totalRoyalties, 5)} Ξ`, color: 'var(--gold)' },
+              { label: 'reserve',                 value: `${formatEth(artwork.reserve, 5)} Ξ`,       color: 'var(--text)' },
+              { label: 'k (curve steepness)',      value: artwork.k.toString(),                        color: 'var(--text-dim)' },
+            ].map((row, i) => (
+              <div key={i} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '5px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none',
+                fontFamily: 'var(--font-mono)', fontSize: 11,
+              }}>
+                <span style={{ color: 'var(--text-muted)' }}>{row.label}</span>
+                {row.node ?? <span style={{ color: row.color }}>{row.value}</span>}
+              </div>
+            ))}
+          </SectionCard>
         </div>
 
-        {/* ── Right: trade panel (sticky) ─────────────────────────────────── */}
-        <div className="md:col-span-1">
-          <div className="sticky top-20 space-y-3">
+        {/* ── Right: trade panel ── */}
+        <div>
+          <div style={{ position: 'sticky', top: 80, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <TradePanel artwork={artwork} onTradeSuccess={handleTradeSuccess} />
 
-            {/* Your position */}
-            {typeof balance === "bigint" && balance > 0n && (
-              <div className="bg-[#00ff88]/5 border border-[#00ff88]/20 rounded-lg p-3 text-xs">
-                <p className="text-[#00ff88] mb-1">your position</p>
-                <p className="text-white font-bold">{balance.toString()} shares</p>
-                <p className="text-[#555] mt-0.5">
-                  value ~{formatEth(artwork.price * balance, 5)} ETH
-                </p>
+            {/* Position */}
+            {typeof balance === 'bigint' && balance > 0n && (
+              <div style={{
+                background: 'hsl(135 56% 54% / 0.07)', border: '1px solid hsl(135 56% 54% / 0.25)',
+                borderRadius: 'var(--r-lg)', padding: '12px 14px',
+              }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                  your position
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>
+                  {balance.toString()} shares
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+                  value ~{formatEth(artwork.price * balance, 5)} Ξ
+                </div>
               </div>
             )}
 
             {/* Fee structure */}
-            <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-3 text-[11px] space-y-1.5">
-              <p className="text-[#555] mb-2">fee structure</p>
-              <div className="flex justify-between text-[#444]">
-                <span>artist royalty (buy + sell)</span>
-                <span className="text-yellow-400">5%</span>
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 'var(--r-lg)', padding: '12px 14px',
+            }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+                fee structure
               </div>
-              <div className="flex justify-between text-[#444]">
-                <span>platform fee</span>
-                <span>1%</span>
-              </div>
-              <div className="flex justify-between text-[#444] pt-1 border-t border-[#1a1a1a]">
-                <span>total artist earned</span>
-                <span className="text-white">{formatEth(artwork.totalRoyalties, 5)} ETH</span>
-              </div>
+              {[
+                { label: 'artist royalty (buy + sell)', value: '5%',  color: 'var(--gold)' },
+                { label: 'platform fee',                value: '1%',  color: 'var(--text-dim)' },
+                { label: 'total artist earned',         value: `${formatEth(artwork.totalRoyalties, 5)} Ξ`, color: 'var(--text)', border: true },
+              ].map((row, i) => (
+                <div key={i} style={{
+                  display: 'flex', justifyContent: 'space-between',
+                  padding: row.border ? '6px 0 0 0' : '4px 0',
+                  borderTop: row.border ? '1px solid var(--border)' : 'none',
+                  marginTop: row.border ? 4 : 0,
+                  fontFamily: 'var(--font-mono)', fontSize: 11,
+                }}>
+                  <span style={{ color: 'var(--text-muted)' }}>{row.label}</span>
+                  <span style={{ color: row.color, fontWeight: row.border ? 700 : 400 }}>{row.value}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
