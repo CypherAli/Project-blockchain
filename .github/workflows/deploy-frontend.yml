@@ -2,7 +2,7 @@ name: Deploy Frontend (Vercel)
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
     paths:
       - 'frontend/**'
       - 'shared/**'
