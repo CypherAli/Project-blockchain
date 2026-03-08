@@ -1,19 +1,14 @@
 'use client';
 
 /**
- * Toast notification system.
+ * Toast notification system — Solarpunk edition
  *
+ * States: pending → success | error | info
  * Features:
- * - Pending → Success → Error states with animated transitions
- * - Block explorer link for transaction toasts
- * - Auto-dismiss after configurable duration
- * - Stack up to 5 toasts
- *
- * Usage:
- *   const { toast } = useToast();
- *   toast.pending('Confirming transaction...');
- *   toast.success('Shares purchased!', txHash);
- *   toast.error('Transaction failed: insufficient ETH');
+ *   - Glassmorphism panels with forest green tint
+ *   - Block explorer link for tx toasts
+ *   - Auto-dismiss with configurable duration
+ *   - Stack up to 5 toasts, oldest drops off
  */
 
 import React, {
@@ -31,51 +26,40 @@ import { getExplorerUrl } from '../../lib/config';
 export type ToastType = 'pending' | 'success' | 'error' | 'info';
 
 export interface ToastItem {
-  id: string;
-  type: ToastType;
-  message: string;
-  txHash?: `0x${string}`;
-  duration: number; // ms, 0 = sticky
+  id:       string;
+  type:     ToastType;
+  message:  string;
+  txHash?:  `0x${string}`;
+  duration: number; // ms; 0 = sticky
 }
 
 type ToastAction =
-  | { type: 'ADD'; toast: ToastItem }
+  | { type: 'ADD';    toast: ToastItem }
   | { type: 'UPDATE'; id: string; patch: Partial<ToastItem> }
   | { type: 'REMOVE'; id: string };
 
-// ─── Reducer ─────────────────────────────────────────────────────────────────
+// ─── Reducer ──────────────────────────────────────────────────────────────────
 
 function toastReducer(state: ToastItem[], action: ToastAction): ToastItem[] {
   switch (action.type) {
-    case 'ADD':
-      return [...state.slice(-4), action.toast]; // max 5 toasts
-    case 'UPDATE':
-      return state.map((t) => (t.id === action.id ? { ...t, ...action.patch } : t));
-    case 'REMOVE':
-      return state.filter((t) => t.id !== action.id);
-    default:
-      return state;
+    case 'ADD':    return [...state.slice(-4), action.toast];
+    case 'UPDATE': return state.map(t => t.id === action.id ? { ...t, ...action.patch } : t);
+    case 'REMOVE': return state.filter(t => t.id !== action.id);
+    default:       return state;
   }
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 interface ToastContextValue {
-  toasts: ToastItem[];
-  /** Show a pending toast — returns id for update/dismiss */
-  pending: (message: string) => string;
-  /** Update an existing toast to success */
-  success: (id: string, message: string, txHash?: `0x${string}`) => void;
-  /** Update an existing toast to error */
-  error: (id: string, message: string) => void;
-  /** Standalone success toast */
+  toasts:     ToastItem[];
+  pending:    (message: string) => string;
+  success:    (id: string, message: string, txHash?: `0x${string}`) => void;
+  error:      (id: string, message: string) => void;
   successNew: (message: string, txHash?: `0x${string}`) => string;
-  /** Standalone error toast */
-  errorNew: (message: string) => string;
-  /** Info toast */
-  info: (message: string) => string;
-  /** Manually dismiss */
-  dismiss: (id: string) => void;
+  errorNew:   (message: string) => string;
+  info:       (message: string) => string;
+  dismiss:    (id: string) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -98,8 +82,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const dismiss = useCallback((id: string) => {
-    const timer = timers.current.get(id);
-    if (timer) clearTimeout(timer);
+    const t = timers.current.get(id);
+    if (t) clearTimeout(t);
     dispatch({ type: 'REMOVE', id });
   }, []);
 
@@ -140,13 +124,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return id;
   }, [scheduleRemove]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => { timers.current.forEach(clearTimeout); };
-  }, []);
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
   return (
-    <ToastContext.Provider value={{ toasts, pending, success, error, successNew, errorNew, info, dismiss }}>
+    <ToastContext.Provider
+      value={{ toasts, pending, success, error, successNew, errorNew, info, dismiss }}
+    >
       {children}
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </ToastContext.Provider>
@@ -157,113 +140,171 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
+  if (!ctx) throw new Error('useToast must be inside <ToastProvider>');
   return ctx;
 }
 
-// ─── Toast UI ─────────────────────────────────────────────────────────────────
+// ─── Visual tokens — Solarpunk palette ────────────────────────────────────────
 
-const ICONS: Record<ToastType, string> = {
-  pending: '⟳',
-  success: '✓',
-  error: '✕',
-  info: 'ℹ',
+const TOKENS: Record<ToastType, {
+  bg: string; border: string; icon: string; iconColor: string; label: string;
+}> = {
+  pending: {
+    bg:        'hsl(135 28% 8% / 0.92)',
+    border:    'hsl(135 40% 40% / 0.35)',
+    icon:      '⟳',
+    iconColor: 'var(--green)',
+    label:     'working',
+  },
+  success: {
+    bg:        'hsl(135 30% 7% / 0.92)',
+    border:    'hsl(135 56% 54% / 0.40)',
+    icon:      '✓',
+    iconColor: 'var(--green)',
+    label:     'done',
+  },
+  error: {
+    bg:        'hsl(20 30% 8% / 0.92)',
+    border:    'hsl(20 58% 52% / 0.40)',
+    icon:      '✕',
+    iconColor: 'var(--terra)',
+    label:     'error',
+  },
+  info: {
+    bg:        'hsl(168 28% 8% / 0.92)',
+    border:    'hsl(168 50% 44% / 0.40)',
+    icon:      'ℹ',
+    iconColor: 'var(--teal)',
+    label:     'info',
+  },
 };
 
-const COLORS: Record<ToastType, { bg: string; border: string; icon: string }> = {
-  pending: { bg: '#1a1a2e', border: '#4444ff44', icon: '#8888ff' },
-  success: { bg: '#0a1a0e', border: '#00ff8844', icon: '#00ff88' },
-  error:   { bg: '#1a0a0a', border: '#ff444444', icon: '#ff4444' },
-  info:    { bg: '#0a1520', border: '#00aaff44', icon: '#00aaff' },
-};
+// ─── Toast container ──────────────────────────────────────────────────────────
 
 function ToastContainer({
   toasts,
   onDismiss,
 }: {
-  toasts: ToastItem[];
+  toasts:    ToastItem[];
   onDismiss: (id: string) => void;
 }) {
   if (toasts.length === 0) return null;
 
   return (
     <div
+      role="region"
+      aria-live="polite"
+      aria-label="Notifications"
       style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        zIndex: 9999,
-        display: 'flex',
+        position:      'fixed',
+        bottom:        24,
+        right:         24,
+        zIndex:        9999,
+        display:       'flex',
         flexDirection: 'column',
-        gap: 8,
-        maxWidth: 380,
-        width: '100%',
+        gap:           8,
+        maxWidth:      380,
+        width:         '100%',
       }}
     >
-      {toasts.map((toast) => (
+      {toasts.map(toast => (
         <ToastCard key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
     </div>
   );
 }
 
+// ─── Single toast card ────────────────────────────────────────────────────────
+
 function ToastCard({
   toast,
   onDismiss,
 }: {
-  toast: ToastItem;
+  toast:     ToastItem;
   onDismiss: (id: string) => void;
 }) {
-  const colors = COLORS[toast.type];
-  const icon = ICONS[toast.type];
+  const tokens      = TOKENS[toast.type];
   const explorerUrl = toast.txHash ? getExplorerUrl('tx', toast.txHash) : null;
 
   return (
     <div
+      role="alert"
       style={{
-        background: colors.bg,
-        border: `1px solid ${colors.border}`,
-        borderRadius: 8,
-        padding: '12px 14px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 10,
-        fontFamily: 'monospace',
-        fontSize: 13,
-        boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-        animation: 'slideIn 0.2s ease-out',
+        background:         tokens.bg,
+        backdropFilter:     'blur(20px) saturate(160%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+        border:             `1px solid ${tokens.border}`,
+        borderRadius:       'var(--r-lg)',
+        padding:            '12px 14px',
+        display:            'flex',
+        alignItems:         'flex-start',
+        gap:                10,
+        boxShadow:          '0 8px 32px rgba(0,0,0,0.5)',
+        animation:          'slideIn 0.22s var(--ease-spring)',
       }}
     >
-      {/* Icon */}
+      {/* ── Icon ── */}
       <span
+        aria-hidden="true"
         style={{
-          color: colors.icon,
-          fontSize: 16,
-          lineHeight: 1,
-          marginTop: 1,
-          flexShrink: 0,
-          animation: toast.type === 'pending' ? 'spin 1s linear infinite' : undefined,
-          display: 'inline-block',
+          color:       tokens.iconColor,
+          fontSize:    16,
+          lineHeight:  1,
+          marginTop:   2,
+          flexShrink:  0,
+          display:     'inline-block',
+          animation:   toast.type === 'pending' ? 'spin 1.1s linear infinite' : undefined,
+          fontFamily:  'var(--font-sans)',
         }}
       >
-        {icon}
+        {tokens.icon}
       </span>
 
-      {/* Content */}
+      {/* ── Body ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: '#e0e0e0', lineHeight: 1.4 }}>{toast.message}</div>
+        {/* Label */}
+        <div
+          style={{
+            fontFamily:    'var(--font-mono)',
+            fontSize:      9,
+            fontWeight:    700,
+            color:         tokens.iconColor,
+            letterSpacing: '0.10em',
+            textTransform: 'uppercase',
+            marginBottom:  3,
+            opacity:       0.75,
+          }}
+        >
+          {tokens.label}
+        </div>
+
+        {/* Message */}
+        <div
+          style={{
+            color:      'var(--text)',
+            fontSize:   13,
+            fontFamily: 'var(--font-sans)',
+            lineHeight: 1.45,
+          }}
+        >
+          {toast.message}
+        </div>
+
+        {/* Explorer link */}
         {explorerUrl && (
           <a
             href={explorerUrl}
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: colors.icon,
-              fontSize: 11,
-              textDecoration: 'none',
-              opacity: 0.8,
-              marginTop: 4,
-              display: 'block',
+              display:    'inline-flex',
+              alignItems: 'center',
+              gap:        4,
+              color:      tokens.iconColor,
+              fontSize:   11,
+              fontFamily: 'var(--font-mono)',
+              marginTop:  5,
+              opacity:    0.8,
             }}
           >
             view on explorer →
@@ -271,20 +312,24 @@ function ToastCard({
         )}
       </div>
 
-      {/* Dismiss */}
+      {/* ── Dismiss ── */}
       <button
         onClick={() => onDismiss(toast.id)}
+        aria-label="Dismiss notification"
         style={{
-          background: 'none',
-          border: 'none',
-          color: '#666',
-          cursor: 'pointer',
-          padding: 0,
-          fontSize: 14,
-          lineHeight: 1,
-          flexShrink: 0,
+          background:  'none',
+          border:      'none',
+          color:       'var(--text-muted)',
+          cursor:      'pointer',
+          padding:     '0 2px',
+          fontSize:    16,
+          lineHeight:  1,
+          flexShrink:  0,
+          transition:  'color 0.15s',
+          fontFamily:  'var(--font-sans)',
         }}
-        aria-label="Dismiss"
+        onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--text)')}
+        onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = 'var(--text-muted)')}
       >
         ×
       </button>

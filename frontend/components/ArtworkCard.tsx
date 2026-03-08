@@ -1,117 +1,356 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { ArtworkInfo, formatEth, getIpfsUrlsForFallback, graduationProgress, timeAgo, shortAddress } from "@/lib/contracts";
+import { useState } from 'react';
+import Link from 'next/link';
+import {
+  ArtworkInfo,
+  formatEth,
+  getIpfsUrlsForFallback,
+  graduationProgress,
+  timeAgo,
+  shortAddress,
+} from '@/lib/contracts';
 
 interface Props {
   artwork: ArtworkInfo;
-  rank?: number;
+  rank?:   number;
 }
 
-export default function ArtworkCard({ artwork, rank }: Props) {
-  const progressPct = graduationProgress(artwork.reserve);
+/* ─── helpers ────────────────────────────────────────────────────────────── */
+function formatSupply(n: bigint): string {
+  if (n >= 1_000_000n) return `${(Number(n) / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000n)     return `${(Number(n) / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
 
-  // IPFS multi-gateway fallback — tries each gateway in order on error
-  const ipfsUrls = getIpfsUrlsForFallback(artwork.ipfsCID);
-  const [imgIndex, setImgIndex] = useState(0);
+/* ─── Rank badge colours ─────────────────────────────────────────────────── */
+const RANK_COLORS: Record<number, { bg: string; text: string }> = {
+  1: { bg: 'var(--gold)',       text: 'hsl(135 28% 8%)' },
+  2: { bg: 'var(--text-dim)',   text: 'hsl(135 28% 8%)' },
+  3: { bg: 'var(--terra)',      text: 'hsl(135 28% 8%)' },
+};
+
+/* ─── ArtworkCard ────────────────────────────────────────────────────────── */
+export default function ArtworkCard({ artwork, rank }: Props) {
+  const progressPct   = graduationProgress(artwork.reserve);
+  const isGraduating  = progressPct >= 80 && !artwork.graduated;
+  const isGraduated   = artwork.graduated;
+  const isNew         = Date.now() / 1000 - Number(artwork.createdAt) < 86_400; // 24h
+
+  /* ── IPFS multi-gateway fallback ── */
+  const ipfsUrls  = getIpfsUrlsForFallback(artwork.ipfsCID);
+  const [imgIdx, setImgIdx] = useState(0);
 
   const handleImgError = () => {
-    if (imgIndex < ipfsUrls.length - 1) {
-      setImgIndex((i) => i + 1);
+    if (imgIdx < ipfsUrls.length - 1) {
+      setImgIdx(i => i + 1);
     } else {
-      // All IPFS gateways failed — use deterministic placeholder
-      setImgIndex(ipfsUrls.length); // sentinel: show placeholder
+      setImgIdx(ipfsUrls.length); // sentinel → placeholder
     }
   };
 
   const imgSrc =
-    imgIndex < ipfsUrls.length
-      ? ipfsUrls[imgIndex]
+    imgIdx < ipfsUrls.length
+      ? ipfsUrls[imgIdx]
       : `https://picsum.photos/seed/${artwork.address}/128/128`;
 
-  return (
-    <Link href={`/artwork/${artwork.address}`}>
-      {/* pump.fun style horizontal card */}
-      <div className="group flex gap-3 p-3 bg-[#111] border border-[#1e1e1e] hover:border-[#00ff88]/30 hover:bg-[#141414] rounded-lg transition-all cursor-pointer">
+  /* ── Border colour based on state ── */
+  const borderColor = isGraduated
+    ? 'var(--gold)'
+    : isGraduating
+    ? 'var(--gold-light)'
+    : 'var(--border)';
 
-        {/* Artwork image */}
-        <div className="relative flex-shrink-0">
-          <img
-            src={imgSrc}
-            alt={artwork.name}
-            width={64}
-            height={64}
-            className="w-16 h-16 rounded-md object-cover bg-[#0d0d0d]"
-            onError={handleImgError}
-          />
+  return (
+    <Link href={`/artwork/${artwork.address}`} style={{ display: 'block', textDecoration: 'none' }}>
+      <article
+        className={isGraduating || isGraduated ? 'graduating-glow' : ''}
+        style={{
+          display:       'flex',
+          gap:           14,
+          padding:       '14px 16px',
+          background:    'var(--surface)',
+          border:        `1px solid ${borderColor}`,
+          borderRadius:  'var(--r-lg)',
+          cursor:        'pointer',
+          transition:    'border-color 0.2s, box-shadow 0.2s, transform 0.18s var(--ease-spring), background 0.15s',
+          position:      'relative',
+          overflow:      'hidden',
+        }}
+        onMouseEnter={e => {
+          const el = e.currentTarget;
+          el.style.background   = 'var(--surface-2)';
+          el.style.borderColor  = isGraduating || isGraduated ? 'var(--gold)' : 'var(--border-hover)';
+          el.style.boxShadow    = isGraduating || isGraduated
+            ? '0 6px 28px var(--gold-glow)'
+            : '0 6px 24px rgba(0,0,0,0.35)';
+          el.style.transform    = 'translateY(-2px)';
+        }}
+        onMouseLeave={e => {
+          const el = e.currentTarget;
+          el.style.background  = 'var(--surface)';
+          el.style.borderColor = borderColor;
+          el.style.boxShadow   = 'none';
+          el.style.transform   = 'translateY(0)';
+        }}
+      >
+        {/* ══ Left — image ══ */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div
+            style={{
+              width:        80,
+              height:       80,
+              borderRadius: 'var(--r-md)',
+              overflow:     'hidden',
+              border:       `1.5px solid ${isGraduated || isGraduating ? 'var(--gold)' : 'var(--border-hover)'}`,
+              background:   'var(--surface-3)',
+            }}
+          >
+            <img
+              src={imgSrc}
+              alt={artwork.name}
+              width={80}
+              height={80}
+              onError={handleImgError}
+              style={{
+                width:      '100%',
+                height:     '100%',
+                objectFit:  'cover',
+                display:    'block',
+              }}
+            />
+          </div>
 
           {/* Top-3 rank badge */}
           {rank && rank <= 3 && (
-            <div className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[#00ff88] rounded-full flex items-center justify-center">
-              <span className="text-black text-[10px] font-black">{rank}</span>
+            <div
+              aria-label={`Rank #${rank}`}
+              style={{
+                position:     'absolute',
+                top:          -7,
+                left:         -7,
+                width:        22,
+                height:       22,
+                borderRadius: '50%',
+                background:   RANK_COLORS[rank]?.bg ?? 'var(--text-dim)',
+                color:        RANK_COLORS[rank]?.text ?? '#fff',
+                fontSize:     10,
+                fontWeight:   800,
+                fontFamily:   'var(--font-mono)',
+                display:      'grid',
+                placeItems:   'center',
+                border:       '2px solid var(--bg)',
+                zIndex:       1,
+              }}
+            >
+              {rank}
             </div>
           )}
 
           {/* Graduated badge */}
-          {artwork.graduated && (
-            <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-black text-[8px] font-black px-1 rounded">
-              🎓
+          {isGraduated && (
+            <div
+              aria-label="Graduated"
+              style={{
+                position:     'absolute',
+                bottom:       -7,
+                right:        -7,
+                background:   'var(--gold)',
+                color:        'hsl(135 28% 8%)',
+                fontSize:     9,
+                fontWeight:   800,
+                fontFamily:   'var(--font-mono)',
+                padding:      '2px 5px',
+                borderRadius: 'var(--r-sm)',
+                border:       '1.5px solid var(--bg)',
+                zIndex:       1,
+                letterSpacing: '0.04em',
+              }}
+            >
+              GRAD
+            </div>
+          )}
+
+          {/* New badge */}
+          {isNew && !rank && (
+            <div
+              style={{
+                position:     'absolute',
+                bottom:       -7,
+                right:        -7,
+                background:   'var(--teal-bg)',
+                color:        'var(--teal-light)',
+                border:       '1.5px solid var(--teal)',
+                fontSize:     9,
+                fontWeight:   700,
+                fontFamily:   'var(--font-mono)',
+                padding:      '2px 5px',
+                borderRadius: 'var(--r-sm)',
+                zIndex:       1,
+                letterSpacing: '0.04em',
+              }}
+            >
+              NEW
             </div>
           )}
         </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          {/* Name + artist */}
-          <div className="flex items-start justify-between mb-1">
-            <div className="min-w-0">
-              <h3 className="text-white font-bold text-sm truncate leading-tight">
-                {artwork.name}
-              </h3>
-              <p className="text-[#555] text-[11px] font-mono">
-                by {shortAddress(artwork.artist)} · {timeAgo(Number(artwork.createdAt))}
-              </p>
-            </div>
+        {/* ══ Right — info ══ */}
+        <div
+          style={{
+            flex:          1,
+            minWidth:      0,
+            display:       'flex',
+            flexDirection: 'column',
+            gap:           5,
+          }}
+        >
+          {/* Row 1 — name + price */}
+          <div
+            style={{
+              display:        'flex',
+              alignItems:     'baseline',
+              justifyContent: 'space-between',
+              gap:            8,
+            }}
+          >
+            <h3
+              style={{
+                fontFamily:   'var(--font-sans)',
+                fontSize:     15,
+                fontWeight:   700,
+                color:        'var(--text)',
+                margin:       0,
+                overflow:     'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace:   'nowrap',
+                lineHeight:   1.3,
+                maxWidth:     '62%',
+              }}
+            >
+              {artwork.name}
+            </h3>
+            <span
+              style={{
+                fontFamily:  'var(--font-mono)',
+                fontSize:    15,
+                fontWeight:  600,
+                color:       'var(--green)',
+                flexShrink:  0,
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {formatEth(artwork.price, 5)} Ξ
+            </span>
           </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-3 text-[11px] mb-2">
-            <span className="text-[#00ff88] font-bold font-mono">
-              {formatEth(artwork.price, 5)} ETH
+          {/* Row 2 — artist + market cap */}
+          <div
+            style={{
+              display:        'flex',
+              justifyContent: 'space-between',
+              alignItems:     'center',
+            }}
+          >
+            <span
+              style={{
+                fontFamily:   'var(--font-mono)',
+                fontSize:     11,
+                color:        'var(--teal)',
+                overflow:     'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace:   'nowrap',
+              }}
+            >
+              {shortAddress(artwork.artist)} · {timeAgo(Number(artwork.createdAt))}
             </span>
-            <span className="text-[#444]">|</span>
-            <span className="text-[#888]">
-              mcap:{" "}
-              <span className="text-[#bbb]">{formatEth(artwork.marketCap, 3)} ETH</span>
-            </span>
-            <span className="text-[#444]">|</span>
-            <span className="text-[#888]">
-              vol:{" "}
-              <span className="text-[#bbb]">{formatEth(artwork.totalVolume, 3)} ETH</span>
+            <span
+              style={{
+                fontFamily:   'var(--font-mono)',
+                fontSize:     11,
+                color:        'var(--text-muted)',
+                whiteSpace:   'nowrap',
+                flexShrink:   0,
+              }}
+            >
+              mcap {formatEth(artwork.marketCap, 3)} Ξ
             </span>
           </div>
 
-          {/* Bonding curve progress — pump.fun signature element */}
+          {/* Row 3 — bonding curve progress */}
           <div>
-            <div className="flex items-center justify-between text-[10px] mb-1">
-              <span className="text-[#444] font-mono">bonding curve progress</span>
-              <span className="text-[#00ff88] font-mono">{progressPct.toFixed(1)}%</span>
-            </div>
-            <div className="w-full bg-[#1a1a1a] rounded-full h-1.5 overflow-hidden">
+            {/* Track */}
+            <div
+              style={{
+                height:       6,
+                background:   'var(--surface-3)',
+                borderRadius: 'var(--r-full)',
+                overflow:     'hidden',
+              }}
+            >
               <div
-                className="h-full rounded-full transition-all progress-bar"
+                className={isGraduating || isGraduated ? 'progress-bar-graduating' : 'progress-bar'}
                 style={{ width: `${Math.max(progressPct, 1)}%` }}
               />
             </div>
+
+            {/* Labels */}
+            <div
+              style={{
+                display:        'flex',
+                justifyContent: 'space-between',
+                marginTop:      4,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily:    'var(--font-mono)',
+                  fontSize:      10,
+                  color:         isGraduating ? 'var(--gold)' : isGraduated ? 'var(--gold-light)' : 'var(--text-muted)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                {isGraduated
+                  ? '🌟 graduated'
+                  : isGraduating
+                  ? `⚡ ${progressPct.toFixed(1)}% — graduating`
+                  : `${progressPct.toFixed(1)}% bonded`}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize:   10,
+                  color:      'var(--text-muted)',
+                }}
+              >
+                {formatSupply(artwork.supply)} shares
+              </span>
+            </div>
           </div>
 
-          {/* Supply / royalties */}
-          <div className="mt-1 text-[10px] text-[#444] font-mono">
-            {artwork.supply.toString()} shares · royalties: {formatEth(artwork.totalRoyalties, 4)} ETH
+          {/* Row 4 — volume + royalties */}
+          <div
+            style={{
+              display:    'flex',
+              gap:        16,
+              paddingTop: 2,
+            }}
+          >
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+              vol{' '}
+              <span style={{ color: 'var(--text-dim)' }}>
+                {formatEth(artwork.totalVolume, 3)} Ξ
+              </span>
+            </span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+              royalty{' '}
+              <span style={{ color: 'var(--text-dim)' }}>
+                {formatEth(artwork.totalRoyalties, 4)} Ξ
+              </span>
+            </span>
           </div>
         </div>
-      </div>
+      </article>
     </Link>
   );
 }
