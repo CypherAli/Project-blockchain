@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { headers } from 'next/headers';
+import { cookieToInitialState } from 'wagmi';
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { Providers } from './providers';
 import Navbar from '@/components/Navbar';
+import { wagmiConfig } from '@/lib/wagmi';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,11 +43,15 @@ export const viewport: Viewport = {
 
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read wagmi cookie to pass initial state → prevents SSR/client hydration mismatch
+  const cookie = (await headers()).get('cookie');
+  const initialState = cookieToInitialState(wagmiConfig, cookie);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
+        <Providers initialState={initialState}>
           <Navbar />
           <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 48px' }}>
             {children}

@@ -1,14 +1,8 @@
 /** @type {import('next').NextConfig} */
 
-const nextConfig = {
-  // Disable ESLint + TypeScript errors blocking production build
-  // (TypeScript is still checked separately in CI via tsc --noEmit)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-};
+// Next.js 15+ removed the eslint/typescript keys from next.config.js.
+// TypeScript is checked separately in CI via `tsc --noEmit`.
+// ESLint is run separately via `eslint .`.
+const nextConfig = {};
 
 module.exports = nextConfig;
