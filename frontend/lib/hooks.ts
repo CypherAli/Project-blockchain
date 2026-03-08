@@ -21,7 +21,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ART_FACTORY_ABI, ART_BONDING_CURVE_ABI, type ArtworkInfo, type TradeEvent } from './contracts';
 import { config } from './config';
-import { deductFees } from '../../shared/bondingCurve';
+import { deductFees } from '@/lib/shared/bondingCurve';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

@@ -146,4 +146,4 @@ export {
   PLATFORM_BPS,
   DEFAULT_K,
   DEFAULT_P0,
-} from '../../shared/bondingCurve';
+} from '@/lib/shared/bondingCurve';
