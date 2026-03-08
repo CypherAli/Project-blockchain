@@ -52,7 +52,7 @@ export default function ArtworkPage({ params }: Props) {
       <AsyncError
         error={error}
         onRetry={() => refetch()}
-        message={`Failed to load artwork ${artworkAddress.slice(0, 8)}…`}
+        context={`artwork ${artworkAddress.slice(0, 8)}…`}
       />
     );
   }
@@ -110,9 +110,9 @@ export default function ArtworkPage({ params }: Props) {
                   href={`/profile/${artwork.artist}`}
                   className="text-[#00ff88] hover:underline"
                 >
-                  {shortAddress(artwork.artist, 8, 6)}
+                  {shortAddress(artwork.artist, 8)}
                 </Link>
-                {" "}· {timeAgo(artwork.createdAt)}
+                {" "}· {timeAgo(Number(artwork.createdAt))}
               </p>
 
               {/* Key stats grid */}
@@ -157,7 +157,7 @@ export default function ArtworkPage({ params }: Props) {
           <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-lg p-4">
             <p className="text-[#555] text-xs mb-3">price history</p>
             {events.length === 0 ? (
-              <ChartSkeleton height={160} />
+              <ChartSkeleton />
             ) : (
               <PriceChart events={events} k={artwork.k} p0={artwork.p0} />
             )}
@@ -194,7 +194,7 @@ export default function ArtworkPage({ params }: Props) {
                     <div className="flex items-center gap-3 text-right">
                       <span className="text-white">{event.shares.toString()} shares</span>
                       <span className="text-[#444]">{formatEth(event.ethAmount, 5)} ETH</span>
-                      <span className="text-[#333]">{timeAgo(BigInt(event.timestamp))}</span>
+                      <span className="text-[#333]">{timeAgo(Number(event.timestamp))}</span>
                     </div>
                   </div>
                 ))}

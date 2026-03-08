@@ -70,7 +70,7 @@ export default function ArtworkCard({ artwork, rank }: Props) {
                 {artwork.name}
               </h3>
               <p className="text-[#555] text-[11px] font-mono">
-                by {shortAddress(artwork.artist)} · {timeAgo(artwork.createdAt)}
+                by {shortAddress(artwork.artist)} · {timeAgo(Number(artwork.createdAt))}
               </p>
             </div>
           </div>

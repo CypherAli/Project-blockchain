@@ -2,14 +2,15 @@
 
 /**
  * Client-side providers wrapper.
- * Separated from layout.tsx so layout can export metadata (server component).
+ * Separated from layout.tsx so layout can remain a server component (for metadata export).
  *
- * SSR Fix: accepts `initialState` from `cookieToInitialState` in layout.tsx
- * so wagmi doesn't hydrate with a different state than the server-rendered HTML.
+ * SSR hydration: layout.tsx reads the raw cookie string and passes it here.
+ * We call cookieToInitialState() client-side so wagmiConfig (getDefaultConfig from
+ * RainbowKit) is never evaluated on the server, avoiding the "client-only" error.
  */
 
-import { useState } from 'react';
-import { WagmiProvider, type State } from 'wagmi';
+import { useMemo, useState } from 'react';
+import { WagmiProvider, cookieToInitialState } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import { wagmiConfig } from '@/lib/wagmi';
@@ -17,11 +18,18 @@ import { ToastProvider } from '@/components/ui/Toast';
 
 export function Providers({
   children,
-  initialState,
+  cookie,
 }: {
   children: React.ReactNode;
-  initialState?: State;
+  cookie?: string | null;
 }) {
+  // Derive wagmi initial state from cookie — prevents hydration mismatch.
+  // cookieToInitialState() is safe to call client-side.
+  const initialState = useMemo(
+    () => cookieToInitialState(wagmiConfig, cookie ?? undefined),
+    [cookie]
+  );
+
   // Must be inside useState to prevent sharing state across requests in SSR
   const [queryClient] = useState(
     () =>

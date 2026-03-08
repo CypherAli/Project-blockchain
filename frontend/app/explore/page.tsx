@@ -110,7 +110,7 @@ export default function ExplorePage() {
         <AsyncError
           error={error}
           onRetry={() => refetch()}
-          message="Failed to load artworks"
+          context="artworks"
         />
       ) : isLoading ? (
         <ArtworkListSkeleton count={8} />

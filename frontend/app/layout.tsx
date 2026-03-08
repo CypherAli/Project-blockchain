@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { headers } from 'next/headers';
-import { cookieToInitialState } from 'wagmi';
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { Providers } from './providers';
 import Navbar from '@/components/Navbar';
-import { wagmiConfig } from '@/lib/wagmi';
+// NOTE: wagmiConfig uses getDefaultConfig() which is client-only (RainbowKit).
+// Do NOT import wagmiConfig here. Pass raw cookie to Providers instead.
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -44,14 +44,14 @@ export const viewport: Viewport = {
 // ─── Root Layout ──────────────────────────────────────────────────────────────
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Read wagmi cookie to pass initial state → prevents SSR/client hydration mismatch
+  // Read the raw cookie string and pass it to the client Providers component,
+  // which calls cookieToInitialState() with wagmiConfig on the client side.
   const cookie = (await headers()).get('cookie');
-  const initialState = cookieToInitialState(wagmiConfig, cookie);
 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers initialState={initialState}>
+        <Providers cookie={cookie}>
           <Navbar />
           <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 48px' }}>
             {children}

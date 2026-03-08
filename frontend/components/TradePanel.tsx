@@ -21,11 +21,12 @@ import type { ArtworkInfo } from '@/lib/contracts';
 
 interface TradePanelProps {
   artwork: ArtworkInfo;
+  onTradeSuccess?: () => void;
 }
 
 const QUICK_AMOUNTS = [1, 5, 10, 100];
 
-export default function TradePanel({ artwork }: TradePanelProps) {
+export default function TradePanel({ artwork, onTradeSuccess }: TradePanelProps) {
   const [tab, setTab] = useState<'buy' | 'sell'>('buy');
   const [amountStr, setAmountStr] = useState('');
   const { address, isConnected } = useAccount();
@@ -62,6 +63,7 @@ export default function TradePanel({ artwork }: TradePanelProps) {
       if (txHash) {
         toast.success(id, `Bought ${amount} share${amount > 1n ? 's' : ''} of ${artwork.name}`, txHash);
         setAmountStr('');
+        onTradeSuccess?.();
       }
     } catch (err) {
       toast.error(id, parseContractError(err));
@@ -79,6 +81,7 @@ export default function TradePanel({ artwork }: TradePanelProps) {
       if (txHash) {
         toast.success(id, `Sold ${amount} share${amount > 1n ? 's' : ''} of ${artwork.name}`, txHash);
         setAmountStr('');
+        onTradeSuccess?.();
       }
     } catch (err) {
       toast.error(id, parseContractError(err));

@@ -48,6 +48,7 @@ export default function CreatePage() {
       const metadataCID = await uploadMetadataToIPFS({
         name, description, artist: address,
         image: `ipfs://${imageCID}`,
+        createdAt: new Date().toISOString(),
       });
       setStep("deploying");
       setStatusMsg("deploying bonding curve contract...");

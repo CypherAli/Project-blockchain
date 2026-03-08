@@ -152,7 +152,19 @@ export function AsyncError({ error, onRetry, context }: AsyncErrorProps) {
 
 // ─── Not Found helper ─────────────────────────────────────────────────────────
 
-export function NotFound({ message = 'Not found' }: { message?: string }) {
+interface NotFoundProps {
+  message?: string;
+  description?: string;
+  backHref?: string;
+  backLabel?: string;
+}
+
+export function NotFound({
+  message = 'Not found',
+  description,
+  backHref,
+  backLabel = 'Go back',
+}: NotFoundProps) {
   return (
     <div
       style={{
@@ -163,7 +175,30 @@ export function NotFound({ message = 'Not found' }: { message?: string }) {
       }}
     >
       <div style={{ fontSize: 48, marginBottom: 12 }}>404</div>
-      <div>{message}</div>
+      <div style={{ fontSize: 18, color: '#aaa', marginBottom: 8 }}>{message}</div>
+      {description && (
+        <div style={{ fontSize: 14, color: '#666', maxWidth: 400, margin: '0 auto 20px' }}>
+          {description}
+        </div>
+      )}
+      {backHref && (
+        <a
+          href={backHref}
+          style={{
+            display: 'inline-block',
+            marginTop: 12,
+            padding: '8px 20px',
+            background: '#1a1a1a',
+            color: '#00ff88',
+            border: '1px solid #00ff8844',
+            borderRadius: 6,
+            textDecoration: 'none',
+            fontSize: 13,
+          }}
+        >
+          ← {backLabel}
+        </a>
+      )}
     </div>
   );
 }
