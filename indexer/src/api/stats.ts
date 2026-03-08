@@ -9,24 +9,21 @@ export const statsRouter = Router();
 
 statsRouter.get('/', async (_req, res) => {
   try {
-    const [artworks, trades] = await Promise.all([
+    // Note: royalty is stored as String (BigInt in wei), so we can't use _sum.
+    // We use count() for totalTrades and aggregate volume manually from artworks.
+    const [artworks, totalTrades] = await Promise.all([
       prisma.artwork.findMany({ select: { totalVolume: true, graduated: true } }),
-      prisma.trade.aggregate({
-        _sum: { royalty: true },
-        _count: { _all: true },
-      }),
+      prisma.trade.count(),
     ]);
 
     const totalVolume = artworks.reduce((sum, a) => sum + BigInt(a.totalVolume), 0n);
-    const totalRoyalties = BigInt(trades._sum.royalty ?? '0');
     const graduatedCount = artworks.filter((a) => a.graduated).length;
 
     res.json({
       totalArtworks: artworks.length,
       totalVolume: totalVolume.toString(),
-      totalRoyaltiesPaid: totalRoyalties.toString(),
       graduatedCount,
-      totalTrades: trades._count._all,
+      totalTrades,
       tradingArtworks: artworks.filter((a) => BigInt(a.totalVolume) > 0n).length,
     });
   } catch (err) {

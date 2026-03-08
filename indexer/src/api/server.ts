@@ -12,8 +12,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { artworksRouter } from './artworks';
-import { tradesRouter } from './trades';
 import { statsRouter } from './stats';
+// Note: trades are served under /api/artworks/:address/trades (in artworksRouter)
 
 const app = express();
 

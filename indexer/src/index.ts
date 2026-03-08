@@ -19,9 +19,9 @@ import app from './api/server';
 
 const CHAINS: Record<number, typeof hardhat> = {
   31337: hardhat,
-  11155111: sepolia as typeof hardhat,
-  80002: polygonAmoy as typeof hardhat,
-  84532: baseSepolia as typeof hardhat,
+  11155111: sepolia as unknown as typeof hardhat,
+  80002: polygonAmoy as unknown as typeof hardhat,
+  84532: baseSepolia as unknown as typeof hardhat,
 };
 
 const chain = CHAINS[config.chainId] ?? hardhat;
@@ -34,18 +34,6 @@ const publicClient = createPublicClient({
     retryDelay: 1_000,
   }),
 });
-
-// ─── ABI for reading artwork addresses ───────────────────────────────────────
-
-const FACTORY_ABI = [
-  {
-    name: 'getAllArtworks',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'address[]' }],
-  },
-] as const;
 
 // ─── Main sync loop ───────────────────────────────────────────────────────────
 

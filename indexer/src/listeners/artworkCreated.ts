@@ -25,16 +25,6 @@ const ART_FACTORY_ABI = [
   },
 ] as const;
 
-const ART_BONDING_CURVE_ABI = [
-  {
-    name: 'DEFAULT_K',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [],
-    outputs: [{ name: '', type: 'uint256' }],
-  },
-] as const;
-
 export async function indexArtworkCreatedEvents(
   client: PublicClient,
   fromBlock: bigint,

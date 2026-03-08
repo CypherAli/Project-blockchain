@@ -126,34 +126,17 @@ async function processAddressBatch(
         update: {}, // Skip if already exists
       });
 
-      // Update artwork state
-      await prisma.artwork.update({
-        where: { address: artworkAddress },
-        data: {
-          supply: args.newTotalSupply.toString(),
-          // Add curveCost to reserve (ethCost - royalty - platformFee)
-          reserve: {
-            // We'll recompute reserve in a separate sync pass for accuracy
-          },
-          totalVolume: {
-            increment: undefined, // handled below
-          },
-          syncedAt: new Date(),
-        },
-      });
-
-      // Increment totalVolume separately (Prisma doesn't support bigint increment natively)
+      // Update artwork state (read-then-write since Prisma can't increment String BigInt fields)
       const artwork = await prisma.artwork.findUnique({ where: { address: artworkAddress } });
       if (artwork) {
         const curveCost = args.ethCost - args.royalty - args.platformFee;
-        const newVolume = BigInt(artwork.totalVolume) + curveCost;
-        const newReserve = BigInt(artwork.reserve) + curveCost;
         await prisma.artwork.update({
           where: { address: artworkAddress },
           data: {
             supply: args.newTotalSupply.toString(),
-            reserve: newReserve.toString(),
-            totalVolume: newVolume.toString(),
+            reserve: (BigInt(artwork.reserve) + curveCost).toString(),
+            totalVolume: (BigInt(artwork.totalVolume) + curveCost).toString(),
+            syncedAt: new Date(),
           },
         });
       }
