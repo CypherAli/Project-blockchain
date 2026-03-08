@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ArtworkInfo, formatEth, ipfsToHttp } from "@/lib/contracts";
+import { ArtworkInfo, formatEth, getIpfsUrlsForFallback, graduationProgress, timeAgo, shortAddress } from "@/lib/contracts";
 
 interface Props {
   artwork: ArtworkInfo;
@@ -9,43 +10,50 @@ interface Props {
 }
 
 export default function ArtworkCard({ artwork, rank }: Props) {
-  const GRAD_THRESHOLD = BigInt("24000000000000000000");
-  const progressPct = Math.min(
-    Number((artwork.reserve * 10000n) / GRAD_THRESHOLD) / 100,
-    100
-  );
-  const shortArtist = artwork.artist
-    ? `${artwork.artist.slice(0, 6)}...${artwork.artist.slice(-4)}`
-    : "Unknown";
+  const progressPct = graduationProgress(artwork.reserve);
 
-  const timeAgo = (ts: bigint) => {
-    const secs = Math.floor(Date.now() / 1000) - Number(ts);
-    if (secs < 60) return `${secs}s ago`;
-    if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-    if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
-    return `${Math.floor(secs / 86400)}d ago`;
+  // IPFS multi-gateway fallback — tries each gateway in order on error
+  const ipfsUrls = getIpfsUrlsForFallback(artwork.ipfsCID);
+  const [imgIndex, setImgIndex] = useState(0);
+
+  const handleImgError = () => {
+    if (imgIndex < ipfsUrls.length - 1) {
+      setImgIndex((i) => i + 1);
+    } else {
+      // All IPFS gateways failed — use deterministic placeholder
+      setImgIndex(ipfsUrls.length); // sentinel: show placeholder
+    }
   };
+
+  const imgSrc =
+    imgIndex < ipfsUrls.length
+      ? ipfsUrls[imgIndex]
+      : `https://picsum.photos/seed/${artwork.address}/128/128`;
 
   return (
     <Link href={`/artwork/${artwork.address}`}>
-      {/* Pump.fun style: horizontal card */}
+      {/* pump.fun style horizontal card */}
       <div className="group flex gap-3 p-3 bg-[#111] border border-[#1e1e1e] hover:border-[#00ff88]/30 hover:bg-[#141414] rounded-lg transition-all cursor-pointer">
-        {/* Image */}
+
+        {/* Artwork image */}
         <div className="relative flex-shrink-0">
           <img
-            src={ipfsToHttp(artwork.ipfsCID)}
+            src={imgSrc}
             alt={artwork.name}
-            className="w-16 h-16 rounded-md object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src =
-                `https://picsum.photos/seed/${artwork.address}/128/128`;
-            }}
+            width={64}
+            height={64}
+            className="w-16 h-16 rounded-md object-cover bg-[#0d0d0d]"
+            onError={handleImgError}
           />
+
+          {/* Top-3 rank badge */}
           {rank && rank <= 3 && (
             <div className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-[#00ff88] rounded-full flex items-center justify-center">
               <span className="text-black text-[10px] font-black">{rank}</span>
             </div>
           )}
+
+          {/* Graduated badge */}
           {artwork.graduated && (
             <div className="absolute -bottom-1 -right-1 bg-yellow-400 text-black text-[8px] font-black px-1 rounded">
               🎓
@@ -55,14 +63,14 @@ export default function ArtworkCard({ artwork, rank }: Props) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          {/* Header row */}
+          {/* Name + artist */}
           <div className="flex items-start justify-between mb-1">
             <div className="min-w-0">
               <h3 className="text-white font-bold text-sm truncate leading-tight">
                 {artwork.name}
               </h3>
               <p className="text-[#555] text-[11px] font-mono">
-                by {shortArtist} · {timeAgo(artwork.createdAt)}
+                by {shortAddress(artwork.artist)} · {timeAgo(artwork.createdAt)}
               </p>
             </div>
           </div>
@@ -74,11 +82,13 @@ export default function ArtworkCard({ artwork, rank }: Props) {
             </span>
             <span className="text-[#444]">|</span>
             <span className="text-[#888]">
-              mkt cap: <span className="text-[#bbb]">{formatEth(artwork.marketCap, 3)} ETH</span>
+              mcap:{" "}
+              <span className="text-[#bbb]">{formatEth(artwork.marketCap, 3)} ETH</span>
             </span>
             <span className="text-[#444]">|</span>
             <span className="text-[#888]">
-              vol: <span className="text-[#bbb]">{formatEth(artwork.totalVolume, 3)} ETH</span>
+              vol:{" "}
+              <span className="text-[#bbb]">{formatEth(artwork.totalVolume, 3)} ETH</span>
             </span>
           </div>
 
@@ -96,9 +106,9 @@ export default function ArtworkCard({ artwork, rank }: Props) {
             </div>
           </div>
 
-          {/* Shares */}
+          {/* Supply / royalties */}
           <div className="mt-1 text-[10px] text-[#444] font-mono">
-            {artwork.supply.toString()} shares minted · royalties: {formatEth(artwork.totalRoyalties, 4)} ETH
+            {artwork.supply.toString()} shares · royalties: {formatEth(artwork.totalRoyalties, 4)} ETH
           </div>
         </div>
       </div>

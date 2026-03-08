@@ -1,15 +1,21 @@
 {
-  "name": "art-bonding-curve-blockchain",
+  "name": "artcurve-blockchain",
   "version": "1.0.0",
-  "description": "Bonding Curve Art Trading Platform - Smart Contracts",
+  "description": "ArtCurve — Bonding Curve Art Trading Platform — Smart Contracts",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",
     "test:coverage": "hardhat coverage",
+    "test:gas": "REPORT_GAS=true hardhat test",
+    "node": "hardhat node",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "node": "hardhat node",
-    "verify": "hardhat verify"
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon-amoy",
+    "deploy:base": "hardhat run scripts/deploy.js --network base-sepolia",
+    "verify:sepolia": "hardhat run scripts/verify.js --network sepolia",
+    "verify:polygon": "hardhat run scripts/verify.js --network polygon-amoy",
+    "verify:base": "hardhat run scripts/verify.js --network base-sepolia",
+    "seed": "hardhat run scripts/seed.js --network localhost"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

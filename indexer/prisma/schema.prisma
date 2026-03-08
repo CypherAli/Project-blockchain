@@ -1,0 +1,97 @@
+// ArtCurve Indexer Database Schema
+//
+// This schema caches blockchain events for fast querying.
+// Source of truth is always the blockchain.
+//
+// Run: npx prisma migrate dev --name init
+// Run: npx prisma generate
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Artwork ──────────────────────────────────────────────────────────────────
+
+model Artwork {
+  /// Contract address (primary key, lowercase)
+  address     String   @id
+  name        String
+  artist      String
+  ipfsCID     String
+  /// Bonding curve slope k in wei (stored as string for BigInt)
+  k           String
+  /// Initial price p0 in wei
+  p0          String
+  /// Current total supply of shares
+  supply      String   @default("0")
+  /// ETH reserve held in contract (wei)
+  reserve     String   @default("0")
+  /// Whether reserve hit 24 ETH graduation threshold
+  graduated   Boolean  @default(false)
+  /// Cumulative total volume (wei)
+  totalVolume String   @default("0")
+  /// Volume in the last 24 hours (wei) — recomputed periodically
+  volume24h   String   @default("0")
+  /// Composite score for trending sort (higher = more trending)
+  trendingScore Float  @default(0)
+  /// Block number of ArtworkCreated event
+  createdBlock String
+  /// Timestamp of ArtworkCreated event
+  createdAt   DateTime
+  /// Last time this record was synced from chain
+  syncedAt    DateTime @default(now())
+
+  trades Trade[]
+
+  @@index([trendingScore(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([artist])
+  @@index([graduated])
+}
+
+// ─── Trade ────────────────────────────────────────────────────────────────────
+
+model Trade {
+  id             String    @id @default(cuid())
+  artworkAddress String
+  artwork        Artwork   @relation(fields: [artworkAddress], references: [address])
+  type           TradeType
+  /// Trader wallet address
+  trader         String
+  /// Number of shares
+  shares         String
+  /// Total ETH paid (buy) or received (sell) in wei
+  ethAmount      String
+  /// ETH royalty to artist in wei
+  royalty        String
+  /// Supply after trade
+  supply         String
+  /// Spot price after trade in wei
+  price          String
+  txHash         String    @unique
+  blockNumber    String
+  timestamp      DateTime
+
+  @@index([artworkAddress, timestamp(sort: Desc)])
+  @@index([trader])
+  @@index([timestamp(sort: Desc)])
+}
+
+enum TradeType {
+  BUY
+  SELL
+}
+
+// ─── Sync state ───────────────────────────────────────────────────────────────
+
+/// Tracks the last processed block number to resume after restart
+model SyncState {
+  id          Int    @id @default(1) // Singleton row
+  lastBlock   String @default("0")
+  updatedAt   DateTime @updatedAt
+}

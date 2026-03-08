@@ -1,53 +1,99 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
+import { useFactoryOwner } from '@/lib/hooks';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { address } = useAccount();
+  const { data: owner } = useFactoryOwner();
+
+  const isOwner = address && owner && address.toLowerCase() === (owner as string).toLowerCase();
+
+  const navLinks = [
+    { href: '/', label: 'home' },
+    { href: '/explore', label: 'explore' },
+    ...(isOwner ? [{ href: '/admin', label: 'admin' }] : []),
+  ];
 
   return (
-    <nav className="border-b border-[#1e1e1e] bg-[#0a0a0a]/98 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-13 py-2">
-          {/* Logo — pump.fun style */}
-          <div className="flex items-center gap-5">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="text-[#00ff88] font-black text-lg tracking-tight font-mono">
-                artcurve.fun
-              </span>
-            </Link>
-
-            <div className="hidden md:flex items-center gap-0.5">
-              {[
-                { href: "/", label: "home" },
-                { href: "/explore", label: "explore" },
-              ].map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={`px-3 py-1.5 rounded text-xs transition-colors font-mono ${
-                    pathname === href
-                      ? "text-[#00ff88]"
-                      : "text-[#555] hover:text-[#aaa]"
-                  }`}
-                >
-                  [{label}]
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              href="/create"
-              className="px-4 py-1.5 bg-[#00ff88] hover:bg-[#00cc6a] text-black font-bold text-xs rounded font-mono transition-all"
+    <nav
+      style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'rgba(10,10,10,0.98)',
+        backdropFilter: 'blur(8px)',
+        borderBottom: '1px solid #1e1e1e',
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '0 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: 52,
+        }}
+      >
+        {/* Left: Logo + nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <Link href="/">
+            <span
+              style={{
+                color: 'var(--green)',
+                fontFamily: 'monospace',
+                fontSize: 18,
+                fontWeight: 900,
+                letterSpacing: '-0.5px',
+              }}
             >
-              [launch artwork]
-            </Link>
-            <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
+              artcurve.fun
+            </span>
+          </Link>
+
+          <div style={{ display: 'flex', gap: 2 }}>
+            {navLinks.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 4,
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  color: pathname === href ? 'var(--green)' : '#555',
+                  transition: 'color 0.15s',
+                }}
+              >
+                [{label}]
+              </Link>
+            ))}
           </div>
+        </div>
+
+        {/* Right: Launch + Wallet */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link
+            href="/create"
+            style={{
+              padding: '6px 16px',
+              background: 'var(--green)',
+              color: '#000',
+              fontFamily: 'monospace',
+              fontSize: 12,
+              fontWeight: 'bold',
+              borderRadius: 4,
+            }}
+          >
+            [launch artwork]
+          </Link>
+          <ConnectButton showBalance={false} chainStatus="icon" accountStatus="avatar" />
         </div>
       </div>
     </nav>

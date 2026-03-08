@@ -1,0 +1,65 @@
+version: '3.9'
+
+# ArtCurve — Local Development Stack
+#
+# Services:
+#   postgres  — PostgreSQL 16 database for the indexer
+#   indexer   — Blockchain event indexer (requires hardhat node running)
+#
+# Usage:
+#   Start DB only:           docker-compose up postgres -d
+#   Start everything:        docker-compose up -d
+#   View indexer logs:       docker-compose logs -f indexer
+#   Stop everything:         docker-compose down
+#   Wipe DB and restart:     docker-compose down -v && docker-compose up -d
+
+services:
+
+  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: artcurve-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: artcurve
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localpass
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d artcurve']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── Indexer ────────────────────────────────────────────────────────────────
+  indexer:
+    build:
+      context: ./indexer
+      dockerfile: Dockerfile
+    container_name: artcurve-indexer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:localpass@postgres:5432/artcurve
+      RPC_URL: ${RPC_URL:-http://host.docker.internal:8545}
+      FACTORY_ADDRESS: ${FACTORY_ADDRESS}
+      CHAIN_ID: ${CHAIN_ID:-31337}
+      START_BLOCK: ${START_BLOCK:-0}
+      API_PORT: 3001
+      POLL_INTERVAL_MS: 3000
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      NODE_ENV: production
+    ports:
+      - '3001:3001'
+    extra_hosts:
+      # Allow container to reach host machine's hardhat node
+      - 'host.docker.internal:host-gateway'
+
+volumes:
+  postgres_data:
+    name: artcurve-postgres-data

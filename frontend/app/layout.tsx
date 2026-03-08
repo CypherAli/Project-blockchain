@@ -1,38 +1,55 @@
-"use client";
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import '@rainbow-me/rainbowkit/styles.css';
+import { Providers } from './providers';
+import Navbar from '@/components/Navbar';
 
-import { Inter } from "next/font/google";
-import "./globals.css";
-import "@rainbow-me/rainbowkit/styles.css";
+const inter = Inter({ subsets: ['latin'] });
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
-import { config } from "@/lib/wagmi";
-import Navbar from "@/components/Navbar";
+// ─── SEO Metadata ─────────────────────────────────────────────────────────────
 
-const inter = Inter({ subsets: ["latin"] });
-const queryClient = new QueryClient();
+export const metadata: Metadata = {
+  title: {
+    default: 'ArtCurve — Trade Art on a Bonding Curve',
+    template: '%s | ArtCurve',
+  },
+  description:
+    'Buy and sell shares of digital artworks. Artists earn 5% royalty on every trade. ' +
+    'Instant liquidity via bonding curve — pump.fun for real art.',
+  keywords: ['NFT', 'bonding curve', 'art trading', 'DeFi', 'fractional ownership', 'royalties'],
+  authors: [{ name: 'ArtCurve' }],
+  openGraph: {
+    type: 'website',
+    siteName: 'ArtCurve',
+    title: 'ArtCurve — Trade Art on a Bonding Curve',
+    description: 'Instant liquidity for digital art. Perpetual on-chain royalties.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ArtCurve',
+    description: 'Buy and sell fractional shares of digital artworks.',
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0a0a0a',
+  colorScheme: 'dark',
+};
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-gray-950 text-gray-100 min-h-screen`}>
-        <WagmiProvider config={config}>
-          <QueryClientProvider client={queryClient}>
-            <RainbowKitProvider
-              theme={darkTheme({
-                accentColor: "#8b5cf6",
-                accentColorForeground: "white",
-                borderRadius: "medium",
-              })}
-            >
-              <Navbar />
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                {children}
-              </main>
-            </RainbowKitProvider>
-          </QueryClientProvider>
-        </WagmiProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className}>
+        <Providers>
+          <Navbar />
+          <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 48px' }}>
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   );

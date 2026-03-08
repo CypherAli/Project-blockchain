@@ -6,6 +6,7 @@ node_modules/
 .env.local
 .env.*.local
 blockchain/.env
+indexer/.env
 
 # ─── Hardhat build artifacts ───────────────────────────────────
 blockchain/artifacts/
@@ -17,6 +18,17 @@ blockchain/deployments/
 frontend/.next/
 frontend/out/
 
+# ─── Indexer build ─────────────────────────────────────────────
+indexer/dist/
+
+# ─── Prisma generated (regenerate with prisma generate) ────────
+# Note: schema.prisma IS committed; only generated client is ignored
+indexer/node_modules/.prisma/
+
+# ─── Frontend generated ABIs (copied by deploy script) ─────────
+# Commit these so others can run without deploying first:
+# frontend/lib/abis/  ← intentionally NOT ignored
+
 # ─── OS / editor ────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
@@ -27,3 +39,10 @@ Thumbs.db
 # ─── Coverage ───────────────────────────────────────────────────
 coverage/
 coverage.json
+
+# ─── Docker ─────────────────────────────────────────────────────
+# Docker volumes are managed by Docker, not Git
+# No files to ignore here
+
+# ─── Vercel ─────────────────────────────────────────────────────
+.vercel
