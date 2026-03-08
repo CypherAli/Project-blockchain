@@ -42,11 +42,8 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: {
-      sepolia: ETHERSCAN_API,
-      polygonAmoy: POLYGONSCAN_API,
-      "base-sepolia": "placeholder",
-    },
+    // Single API key = Etherscan V2 API (required after May 2025)
+    apiKey: ETHERSCAN_API,
     customChains: [
       {
         network: "base-sepolia",
