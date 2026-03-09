@@ -1,17 +1,17 @@
 'use client';
 
 /**
- * Skeleton loading components.
- * Use these while data is loading to prevent white-screen flash.
+ * Skeleton loading components — Solarpunk edition
+ * Uses root-pulse animation from globals.css
  */
 
 import React from 'react';
 
-// ─── Base Skeleton ────────────────────────────────────────────────────────────
+// ─── Base ─────────────────────────────────────────────────────────────────────
 
 interface SkeletonProps {
   className?: string;
-  style?: React.CSSProperties;
+  style?:     React.CSSProperties;
 }
 
 export function Skeleton({ className = '', style }: SkeletonProps) {
@@ -24,44 +24,49 @@ export function Skeleton({ className = '', style }: SkeletonProps) {
   );
 }
 
-// ─── Artwork Card Skeleton ─────────────────────────────────────────────────────
+// ─── Artwork Card Skeleton ────────────────────────────────────────────────────
 
 export function ArtworkCardSkeleton() {
   return (
     <div
       style={{
-        background: 'var(--card-bg)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        padding: '12px 16px',
-        display: 'flex',
-        gap: 12,
+        display:      'flex',
+        gap:          14,
+        padding:      '14px 16px',
+        background:   'var(--surface)',
+        border:       '1px solid var(--border)',
+        borderRadius: 'var(--r-lg)',
       }}
     >
       {/* Image */}
-      <Skeleton style={{ width: 64, height: 64, borderRadius: 6, flexShrink: 0 }} />
+      <Skeleton style={{ width: 80, height: 80, borderRadius: 'var(--r-md)', flexShrink: 0 }} />
+
       {/* Info */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <Skeleton style={{ width: '55%', height: 16, borderRadius: 4 }} />
-        <Skeleton style={{ width: '40%', height: 12, borderRadius: 4 }} />
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Skeleton style={{ width: '25%', height: 12, borderRadius: 4 }} />
-          <Skeleton style={{ width: '25%', height: 12, borderRadius: 4 }} />
-          <Skeleton style={{ width: '20%', height: 12, borderRadius: 4 }} />
+        {/* Name + price */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+          <Skeleton style={{ width: '50%', height: 16, borderRadius: 4 }} />
+          <Skeleton style={{ width: '22%', height: 16, borderRadius: 4 }} />
         </div>
-        <Skeleton style={{ width: '100%', height: 6, borderRadius: 3 }} />
+        {/* Artist */}
+        <Skeleton style={{ width: '38%', height: 11, borderRadius: 4 }} />
+        {/* Progress */}
+        <Skeleton style={{ width: '100%', height: 6, borderRadius: 'var(--r-full)' }} />
+        {/* Footer stats */}
+        <div style={{ display: 'flex', gap: 16 }}>
+          <Skeleton style={{ width: 60, height: 10, borderRadius: 4 }} />
+          <Skeleton style={{ width: 80, height: 10, borderRadius: 4 }} />
+        </div>
       </div>
     </div>
   );
 }
 
-/** Renders N artwork card skeletons */
+/** Renders N artwork card skeletons in a column */
 export function ArtworkListSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {Array.from({ length: count }, (_, i) => (
-        <ArtworkCardSkeleton key={i} />
-      ))}
+      {Array.from({ length: count }, (_, i) => <ArtworkCardSkeleton key={i} />)}
     </div>
   );
 }
@@ -73,18 +78,19 @@ export function ArtworkDetailSkeleton() {
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 360px', gap: 24 }}>
       {/* Left: image + stats */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Skeleton style={{ width: '100%', aspectRatio: '1', borderRadius: 8 }} />
-        <Skeleton style={{ width: '70%', height: 24, borderRadius: 4 }} />
-        <Skeleton style={{ width: '45%', height: 16, borderRadius: 4 }} />
+        <Skeleton style={{ width: '100%', aspectRatio: '1', borderRadius: 'var(--r-lg)' }} />
+        <Skeleton style={{ width: '65%', height: 24, borderRadius: 6 }} />
+        <Skeleton style={{ width: '45%', height: 14, borderRadius: 6 }} />
+        <Skeleton style={{ width: '100%', height: 8, borderRadius: 'var(--r-full)' }} />
       </div>
-      {/* Middle: chart + history */}
+      {/* Middle: chart + trade history */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <Skeleton style={{ width: '100%', height: 200, borderRadius: 8 }} />
-        <Skeleton style={{ width: '100%', height: 300, borderRadius: 8 }} />
+        <Skeleton style={{ width: '100%', height: 220, borderRadius: 'var(--r-lg)' }} />
+        <Skeleton style={{ width: '100%', height: 320, borderRadius: 'var(--r-lg)' }} />
       </div>
       {/* Right: trade panel */}
       <div>
-        <Skeleton style={{ width: '100%', height: 400, borderRadius: 8 }} />
+        <Skeleton style={{ width: '100%', height: 440, borderRadius: 'var(--r-lg)' }} />
       </div>
     </div>
   );
@@ -94,11 +100,11 @@ export function ArtworkDetailSkeleton() {
 
 export function StatsSkeleton() {
   return (
-    <div style={{ display: 'flex', gap: 24 }}>
+    <div style={{ display: 'flex', gap: 20 }}>
       {Array.from({ length: 4 }, (_, i) => (
         <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <Skeleton style={{ width: 80, height: 28, borderRadius: 4 }} />
-          <Skeleton style={{ width: 60, height: 12, borderRadius: 4 }} />
+          <Skeleton style={{ width: 88, height: 30, borderRadius: 6 }} />
+          <Skeleton style={{ width: 64, height: 11, borderRadius: 4 }} />
         </div>
       ))}
     </div>
@@ -111,17 +117,17 @@ export function ChartSkeleton() {
   return (
     <div
       style={{
-        width: '100%',
-        height: 200,
-        background: 'var(--card-bg)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        display: 'flex',
-        alignItems: 'center',
+        width:        '100%',
+        height:       200,
+        background:   'var(--surface)',
+        border:       '1px solid var(--border)',
+        borderRadius: 'var(--r-lg)',
+        display:      'flex',
+        alignItems:   'center',
         justifyContent: 'center',
       }}
     >
-      <Skeleton style={{ width: '90%', height: '80%', borderRadius: 6 }} />
+      <Skeleton style={{ width: '88%', height: '76%', borderRadius: 'var(--r-md)' }} />
     </div>
   );
 }

@@ -1,59 +1,72 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
 import { Providers } from './providers';
 import Navbar from '@/components/Navbar';
 // NOTE: wagmiConfig uses getDefaultConfig() which is client-only (RainbowKit).
-// Do NOT import wagmiConfig here. Pass raw cookie to Providers instead.
+// Do NOT import wagmiConfig here — pass raw cookie to Providers instead.
 
-const inter = Inter({ subsets: ['latin'] });
+/* ─── Fonts — editorial system ───────────────────────────────────────────── */
+const jakarta = Plus_Jakarta_Sans({
+  subsets:  ['latin'],
+  weight:   ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-sans',
+  display:  'swap',
+});
 
-// ─── SEO Metadata ─────────────────────────────────────────────────────────────
+const jetbrains = JetBrains_Mono({
+  subsets:  ['latin'],
+  weight:   ['400', '500', '600'],
+  variable: '--font-mono',
+  display:  'swap',
+});
 
+/* ─── SEO ─────────────────────────────────────────────────────────────────── */
 export const metadata: Metadata = {
   title: {
-    default: 'ArtCurve — Trade Art on a Bonding Curve',
+    default:  'ArtCurve — Trade Art on a Bonding Curve',
     template: '%s | ArtCurve',
   },
   description:
     'Buy and sell shares of digital artworks. Artists earn 5% royalty on every trade. ' +
     'Instant liquidity via bonding curve — pump.fun for real art.',
   keywords: ['NFT', 'bonding curve', 'art trading', 'DeFi', 'fractional ownership', 'royalties'],
-  authors: [{ name: 'ArtCurve' }],
+  authors:  [{ name: 'ArtCurve' }],
   openGraph: {
-    type: 'website',
-    siteName: 'ArtCurve',
-    title: 'ArtCurve — Trade Art on a Bonding Curve',
+    type:        'website',
+    siteName:    'ArtCurve',
+    title:       'ArtCurve — Trade Art on a Bonding Curve',
     description: 'Instant liquidity for digital art. Perpetual on-chain royalties.',
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'ArtCurve',
+    card:        'summary_large_image',
+    title:       'ArtCurve',
     description: 'Buy and sell fractional shares of digital artworks.',
   },
   robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a0a0a',
+  themeColor:  '#0c1c0f',
   colorScheme: 'dark',
 };
 
-// ─── Root Layout ──────────────────────────────────────────────────────────────
-
+/* ─── Root Layout ─────────────────────────────────────────────────────────── */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  // Read the raw cookie string and pass it to the client Providers component,
-  // which calls cookieToInitialState() with wagmiConfig on the client side.
   const cookie = (await headers()).get('cookie');
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html
+      lang="en"
+      className={`${jakarta.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
+    >
+      <body>
         <Providers cookie={cookie}>
           <Navbar />
-          <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 48px' }}>
+          <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 64px' }}>
             {children}
           </main>
         </Providers>

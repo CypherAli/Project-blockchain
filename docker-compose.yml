@@ -34,10 +34,10 @@ services:
       timeout: 5s
       retries: 10
 
-  # ─── Indexer ────────────────────────────────────────────────────────────────
+  # ─── Indexer — Go edition (high performance) ────────────────────────────────
   indexer:
     build:
-      context: ./indexer
+      context: ./indexer-go
       dockerfile: Dockerfile
     container_name: artcurve-indexer
     restart: unless-stopped
