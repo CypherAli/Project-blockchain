@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
+import { Plus_Jakarta_Sans, JetBrains_Mono, Playfair_Display } from 'next/font/google';
 import { headers } from 'next/headers';
 import './globals.css';
 import '@rainbow-me/rainbowkit/styles.css';
@@ -20,6 +20,14 @@ const jetbrains = JetBrains_Mono({
   subsets:  ['latin'],
   weight:   ['400', '500', '600'],
   variable: '--font-mono',
+  display:  'swap',
+});
+
+const playfair = Playfair_Display({
+  subsets:  ['latin'],
+  weight:   ['400', '700', '900'],
+  style:    ['normal', 'italic'],
+  variable: '--font-display',
   display:  'swap',
 });
 
@@ -49,7 +57,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor:  '#0c1c0f',
+  themeColor:  '#07080d',
   colorScheme: 'dark',
 };
 
@@ -60,13 +68,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${jetbrains.variable}`}
+      className={`${jakarta.variable} ${jetbrains.variable} ${playfair.variable}`}
       suppressHydrationWarning
     >
       <body>
         <Providers cookie={cookie}>
           <Navbar />
-          <main style={{ maxWidth: 1280, margin: '0 auto', padding: '0 16px 64px' }}>
+          <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 88px 64px', overflowX: 'hidden' }}>
             {children}
           </main>
         </Providers>
