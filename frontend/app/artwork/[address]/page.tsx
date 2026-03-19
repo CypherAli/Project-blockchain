@@ -1,20 +1,43 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useArtworkInfo, useTradeHistory, useShareBalance } from '@/lib/hooks';
 import TradePanel from '@/components/TradePanel';
 import PriceChart from '@/components/PriceChart';
 import {
-  formatEth, getIpfsUrlsForFallback, getExplorerUrl,
-  graduationProgress, shortAddress, timeAgo,
+  formatEth, formatUsd, getIpfsUrlsForFallback, getExplorerUrl,
+  graduationProgress, shortAddress, timeAgo, type TradeEvent,
 } from '@/lib/contracts';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAccount } from 'wagmi';
 import { ArtworkDetailSkeleton, ChartSkeleton } from '@/components/ui/Skeleton';
 import { NotFound, AsyncError } from '@/components/ui/ErrorBoundary';
+import { DEMO_ARTWORKS, DEMO_IMGS, getDemoTradeHistory, isDemoAddress } from '@/lib/demo';
 
 interface Props {
   params: Promise<{ address: string }>;
+}
+
+// ─── Comments (localStorage) ──────────────────────────────────────────────────
+interface Comment { id: string; author: string; text: string; ts: number; }
+function loadComments(addr: string): Comment[] {
+  if (typeof window === 'undefined') return [];
+  try { return JSON.parse(localStorage.getItem(`artcurve-comments-${addr.toLowerCase()}`) || '[]'); }
+  catch { return []; }
+}
+
+// ─── Holders computation from trade events ────────────────────────────────────
+function computeHolders(events: TradeEvent[]) {
+  const map = new Map<string, bigint>();
+  for (const e of [...events].reverse()) {
+    const addr = e.trader.toLowerCase();
+    map.set(addr, (map.get(addr) ?? 0n) + (e.type === 'BUY' ? e.shares : -e.shares));
+  }
+  return [...map.entries()]
+    .filter(([, b]) => b > 0n)
+    .sort((a, b) => (a[1] > b[1] ? -1 : 1))
+    .map(([trader, balance]) => ({ trader, balance }));
 }
 
 // ─── Stat box ─────────────────────────────────────────────────────────────────
@@ -60,20 +83,54 @@ export default function ArtworkPage({ params }: Props) {
   const artworkAddress   = address as `0x${string}`;
   const queryClient      = useQueryClient();
 
-  const { data: artwork, isLoading, isError, error, refetch } = useArtworkInfo(artworkAddress);
-  const { data: events = [] } = useTradeHistory(artworkAddress, 50);
-  const { data: balance }     = useShareBalance(artworkAddress);
+  const { address: userAddress }  = useAccount();
+  const isDemo = isDemoAddress(artworkAddress);
+  const demoArtwork = isDemo ? DEMO_ARTWORKS.find(a => a.address === artworkAddress) ?? null : null;
+  const demoEvents  = isDemo ? getDemoTradeHistory(artworkAddress) : [];
 
-  // IPFS multi-gateway fallback
+  const { data: chainArtwork, isLoading, isError, error, refetch } = useArtworkInfo(isDemo ? undefined : artworkAddress);
+  const { data: chainEvents = [] } = useTradeHistory(isDemo ? undefined : artworkAddress, 50);
+  const { data: balance }          = useShareBalance(isDemo ? undefined : artworkAddress);
+
+  // Merge demo or chain data
+  const artwork = isDemo ? demoArtwork : chainArtwork;
+  const events  = isDemo ? demoEvents  : chainEvents;
+
+  const [detailTab, setDetailTab]   = useState<'trades' | 'holders' | 'comments'>('trades');
+  const [commentText, setCommentText] = useState('');
+  const [comments, setComments]     = useState<Comment[]>([]);
+  const [copied, setCopied]         = useState(false);
+
+  useEffect(() => { setComments(loadComments(artworkAddress)); }, [artworkAddress]);
+
+  const holders     = computeHolders(events);
+  const totalShares = holders.reduce((s, h) => s + h.balance, 0n);
+
+  const handlePostComment = () => {
+    if (!commentText.trim() || !userAddress) return;
+    const c: Comment = { id: `${Date.now()}-${Math.random()}`, author: userAddress, text: commentText.trim(), ts: Date.now() };
+    const updated = [...comments, c];
+    localStorage.setItem(`artcurve-comments-${artworkAddress.toLowerCase()}`, JSON.stringify(updated));
+    setComments(updated);
+    setCommentText('');
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  // Image source: demo map → IPFS → placeholder
   const ipfsUrls = getIpfsUrlsForFallback(artwork?.ipfsCID ?? '');
   const [imgIdx, setImgIdx] = useState(0);
   const handleImgError = () => {
     if (imgIdx < ipfsUrls.length - 1) setImgIdx((i) => i + 1);
     else setImgIdx(ipfsUrls.length);
   };
-  const imgSrc = artwork?.ipfsCID && imgIdx < ipfsUrls.length
-    ? ipfsUrls[imgIdx]
-    : `https://picsum.photos/seed/${artworkAddress}/256/256`;
+  const imgSrc = DEMO_IMGS[artworkAddress]
+    ?? (artwork?.ipfsCID && imgIdx < ipfsUrls.length ? ipfsUrls[imgIdx] : `https://picsum.photos/seed/${artworkAddress}/256/256`);
 
   const handleTradeSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['artworkInfo', artworkAddress] });
@@ -81,9 +138,9 @@ export default function ArtworkPage({ params }: Props) {
     queryClient.invalidateQueries({ queryKey: ['allArtworks'] });
   };
 
-  if (isLoading) return <ArtworkDetailSkeleton />;
+  if (!isDemo && isLoading) return <ArtworkDetailSkeleton />;
 
-  if (isError) {
+  if (!isDemo && isError) {
     return <AsyncError error={error} onRetry={() => refetch()} context={`artwork ${artworkAddress.slice(0, 8)}…`} />;
   }
 
@@ -154,13 +211,23 @@ export default function ArtworkPage({ params }: Props) {
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-              <h1 style={{
-                fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 800,
-                color: 'var(--text)', margin: 0, marginBottom: 4,
-                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-              }}>
-                {artwork.name}
-              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <h1 style={{
+                  fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 800,
+                  color: 'var(--text)', margin: 0,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {artwork.name}
+                </h1>
+                <button onClick={handleShare} title="Copy link" style={{
+                  flexShrink: 0, padding: '4px 10px', background: 'var(--surface-2)',
+                  border: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
+                  fontFamily: 'var(--font-mono)', fontSize: 10, color: copied ? 'var(--green)' : 'var(--text-muted)',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
+                  {copied ? 'copied!' : 'share ↗'}
+                </button>
+              </div>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', marginBottom: 14 }}>
                 created by{' '}
                 <Link href={`/profile/${artwork.artist}`}
@@ -175,10 +242,10 @@ export default function ArtworkPage({ params }: Props) {
 
               {/* Stats */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                <StatBox label="price"         value={`${formatEth(artwork.price, 6)} Ξ`}       accent />
-                <StatBox label="market cap"    value={`${formatEth(artwork.marketCap, 4)} Ξ`}        />
-                <StatBox label="volume"        value={`${formatEth(artwork.totalVolume, 4)} Ξ`}      />
-                <StatBox label="shares minted" value={artwork.supply.toString()}                      />
+                <StatBox label={`price · ${formatUsd(artwork.price)}`} value={`${formatEth(artwork.price, 6)} Ξ`} accent />
+                <StatBox label={`market cap · ${formatUsd(artwork.marketCap)}`} value={`${formatEth(artwork.marketCap, 4)} Ξ`} />
+                <StatBox label={`volume · ${formatUsd(artwork.totalVolume)}`}   value={`${formatEth(artwork.totalVolume, 4)} Ξ`} />
+                <StatBox label="shares minted" value={artwork.supply.toString()} />
               </div>
             </div>
           </div>
@@ -209,32 +276,39 @@ export default function ArtworkPage({ params }: Props) {
             {events.length === 0 ? <ChartSkeleton /> : <PriceChart events={events} k={artwork.k} p0={artwork.p0} />}
           </SectionCard>
 
-          {/* Trade history */}
-          <SectionCard title={`trade history (${events.length})`}>
-            {events.length === 0 ? (
+          {/* ── Tabs: Trades | Holders | Comments ── */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 16 }}>
+            {/* Tab bar */}
+            <div style={{ display: 'flex', gap: 0, marginBottom: 14, borderBottom: '1px solid var(--border)' }}>
+              {(['trades', 'holders', 'comments'] as const).map(t => (
+                <button key={t} onClick={() => setDetailTab(t)} style={{
+                  padding: '6px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: detailTab === t ? 700 : 400,
+                  color: detailTab === t ? 'var(--text)' : 'var(--text-muted)',
+                  borderBottom: `2px solid ${detailTab === t ? 'var(--gold)' : 'transparent'}`,
+                  marginBottom: -1, transition: 'all 0.15s',
+                }}>
+                  {t === 'trades' ? `trades (${events.length})` : t === 'holders' ? `holders (${holders.length})` : `comments (${comments.length})`}
+                </button>
+              ))}
+            </div>
+
+            {/* Trades */}
+            {detailTab === 'trades' && (events.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
                 no trades yet — be the first!
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, maxHeight: 220, overflowY: 'auto', paddingRight: 4 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 240, overflowY: 'auto', paddingRight: 4 }}>
                 {events.slice(0, 30).map((event, i) => (
-                  <div
-                    key={event.txHash ?? i}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 11,
-                    }}
-                  >
+                  <div key={event.txHash ?? i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 11 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{
-                        fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800,
-                        color: event.type === 'BUY' ? 'var(--green)' : 'var(--terra)',
-                      }}>
-                        {event.type}
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 800, color: event.type === 'BUY' ? 'var(--green)' : 'var(--terra)' }}>{event.type}</span>
+                      <Link href={`/profile/${event.trader}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', textDecoration: 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--teal)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
                         {shortAddress(event.trader)}
-                      </span>
+                      </Link>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)' }}>
                       <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{event.shares.toString()} shares</span>
@@ -244,8 +318,70 @@ export default function ArtworkPage({ params }: Props) {
                   </div>
                 ))}
               </div>
+            ))}
+
+            {/* Holders */}
+            {detailTab === 'holders' && (holders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+                no holders yet
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', maxHeight: 240, overflowY: 'auto' }}>
+                {holders.map(({ trader, balance }, i) => {
+                  const pct = totalShares > 0n ? Number(balance * 10000n / totalShares) / 100 : 0;
+                  const isArtist = trader.toLowerCase() === artwork.artist.toLowerCase();
+                  return (
+                    <div key={trader} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', width: 20 }}>#{i + 1}</span>
+                      <Link href={`/profile/${trader}`} style={{ flex: 1, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--teal)', textDecoration: 'none' }}>
+                        {shortAddress(trader as `0x${string}`, 8)}
+                      </Link>
+                      {isArtist && (
+                        <span style={{ fontSize: 9, background: 'hsl(42 72% 48% / 0.18)', color: 'var(--gold)', border: '1px solid hsl(42 72% 48% / 0.35)', padding: '1px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>artist</span>
+                      )}
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)' }}>{balance.toString()} shares</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', minWidth: 40, textAlign: 'right' }}>{pct.toFixed(1)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* Comments */}
+            {detailTab === 'comments' && (
+              <div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                  <input value={commentText} onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handlePostComment()}
+                    placeholder={userAddress ? 'add a comment...' : 'connect wallet to comment'}
+                    disabled={!userAddress}
+                    style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '8px 12px', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12, outline: 'none' }}
+                  />
+                  <button onClick={handlePostComment} disabled={!userAddress || !commentText.trim()}
+                    style={{ padding: '8px 16px', background: 'var(--green)', color: 'hsl(135 28% 8%)', border: 'none', borderRadius: 'var(--r-md)', fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: (!userAddress || !commentText.trim()) ? 0.4 : 1 }}>
+                    post
+                  </button>
+                </div>
+                {comments.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '16px 0', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>no comments yet — be the first!</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 280, overflowY: 'auto' }}>
+                    {[...comments].reverse().map(c => (
+                      <div key={c.id} style={{ padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                          <Link href={`/profile/${c.author}`} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--teal)', textDecoration: 'none' }}>
+                            {shortAddress(c.author as `0x${string}`, 8)}
+                          </Link>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>{timeAgo(Math.floor(c.ts / 1000))}</span>
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{c.text}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
-          </SectionCard>
+          </div>
 
           {/* Contract info */}
           <SectionCard title="contract info">

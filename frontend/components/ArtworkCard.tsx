@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   ArtworkInfo,
   formatEth,
+  formatUsd,
   getIpfsUrlsForFallback,
   graduationProgress,
   timeAgo,
@@ -230,18 +231,14 @@ export default function ArtworkCard({ artwork, rank }: Props) {
             >
               {artwork.name}
             </h3>
-            <span
-              style={{
-                fontFamily:  'var(--font-mono)',
-                fontSize:    15,
-                fontWeight:  600,
-                color:       'var(--green)',
-                flexShrink:  0,
-                letterSpacing: '-0.01em',
-              }}
-            >
-              {formatEth(artwork.price, 5)} Ξ
-            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--green)', letterSpacing: '-0.01em' }}>
+                {formatEth(artwork.price, 5)} Ξ
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+                {formatUsd(artwork.price)}
+              </span>
+            </div>
           </div>
 
           {/* Row 2 — artist + market cap */}
@@ -273,7 +270,7 @@ export default function ArtworkCard({ artwork, rank }: Props) {
                 flexShrink:   0,
               }}
             >
-              mcap {formatEth(artwork.marketCap, 3)} Ξ
+              MC {formatUsd(artwork.marketCap)}
             </span>
           </div>
 

@@ -860,33 +860,42 @@ a { color: inherit; text-decoration: none; }
   box-shadow: 0 0 20px hsl(42 88% 52% / 0.5);
 }
 
-/* Spotlight removed */
-
 /* ═══════════════════════════════════════════════════════════════════════════
-   CAROUSEL GOLD DUST PARTICLES
+   ART SPARKLES — golden light motes drifting over artwork images
    ═══════════════════════════════════════════════════════════════════════════ */
-@keyframes cf-dust-rise {
-  0%   { transform: translateY(0)      translateX(0)              scale(1.0); opacity: 0;    }
-  12%  { opacity: 1; }
-  88%  { opacity: 0.65; }
-  100% { transform: translateY(-160px) translateX(var(--drift,10px)) scale(0.15); opacity: 0; }
+@keyframes art-sparkle {
+  0%   { opacity: 0;    transform: translateY(0)     scale(0.5); }
+  12%  { opacity: 0.90; }
+  72%  { opacity: 0.55; }
+  100% { opacity: 0;    transform: translateY(-34px) scale(1.15); }
 }
 
-.cf-dust {
+.art-sparkles {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 4;
+  z-index: 12;
   overflow: hidden;
-  border-radius: inherit;
 }
 
-.cf-dust-mote {
+.art-spark {
   position: absolute;
   border-radius: 50%;
-  animation: cf-dust-rise var(--dur, 3s) var(--del, 0s) infinite ease-out;
+  background: radial-gradient(
+    circle,
+    hsl(52 100% 94%)  0%,
+    hsl(46 96%  72%) 45%,
+    transparent      100%
+  );
+  box-shadow: 0 0 6px 2px hsl(46 92% 68% / 0.60);
+  animation: art-sparkle 5s 0s infinite ease-in-out;
   will-change: transform, opacity;
 }
+
+/* Grid cards: sparkles only on hover */
+.gc-img-wrap .art-sparkles { opacity: 0; transition: opacity 0.5s ease; }
+.gc:hover   .art-sparkles  { opacity: 1; }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HERO SECTION — real gallery background
@@ -1625,9 +1634,12 @@ a { color: inherit; text-decoration: none; }
     transform    0.18s var(--ease-spring);
 }
 .gc:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 8px 36px hsl(0 0% 0% / 0.45);
-  transform: translateY(-4px);
+  border-color: hsl(42 55% 38% / 0.55);
+  box-shadow:
+    0 12px 44px hsl(0 0% 0% / 0.55),
+    0 0 0 1px hsl(42 55% 38% / 0.20),
+    0 0 28px hsl(42 80% 48% / 0.08);
+  transform: translateY(-5px);
 }
 .gc--glow { animation: solar-pulse 2.5s ease-in-out infinite; }
 
@@ -1717,12 +1729,7 @@ a { color: inherit; text-decoration: none; }
   0%, 100% { filter: drop-shadow(0 0 10px hsl(42 88% 52% / 0.45)) drop-shadow(0 6px 20px hsl(0 0% 0% / 0.70)); }
   50%       { filter: drop-shadow(0 0 20px hsl(42 90% 58% / 0.65)) drop-shadow(0 6px 28px hsl(0 0% 0% / 0.80)); }
 }
-@keyframes gram-note-float {
-  0%   { opacity: 0; transform: translateY(0) scale(0.7); }
-  15%  { opacity: 0.9; }
-  70%  { opacity: 0.6; }
-  100% { opacity: 0; transform: translateY(-28px) scale(1.1); }
-}
+
 @keyframes vinyl-hint-in {
   from { opacity: 0; transform: translateX(8px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -1739,19 +1746,6 @@ a { color: inherit; text-decoration: none; }
   gap: 6px;
 }
 
-/* Floating music note above gramophone when playing */
-.gram-note {
-  position: absolute;
-  top: -8px;
-  right: 8px;
-  font-size: 12px;
-  color: hsl(42 88% 62%);
-  animation: gram-note-float 2.2s ease-out infinite;
-  pointer-events: none;
-  text-shadow: 0 0 8px hsl(42 88% 52% / 0.6);
-}
-.gram-note:nth-child(2) { animation-delay: 0.8s; right: 20px; font-size: 10px; }
-.gram-note:nth-child(3) { animation-delay: 1.6s; right: 4px;  font-size: 9px; }
 
 /* Gramophone button — transparent bg, just the SVG */
 .gram-btn {
