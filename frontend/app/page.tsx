@@ -341,6 +341,8 @@ function CurtainFrame() {
   const rP3       = useRef<SVGPathElement>(null);
   const rTex      = useRef<SVGPathElement>(null);
   const rRailRef  = useRef<SVGRectElement>(null);
+  const lTbRef    = useRef<SVGGElement>(null);   /* left tie-back knot */
+  const rTbRef    = useRef<SVGGElement>(null);   /* right tie-back knot */
   const [heroVisible, setHeroVisible] = useState(true);
   const [heroH, setHeroH] = useState(0);
 
@@ -557,6 +559,9 @@ function CurtainFrame() {
 
       if (rRailRef.current) rRailRef.current.setAttribute('x', String(W - W_BASE - 2));
       if (rTasselEl) rTasselEl.setAttribute('transform', `translate(${W}, 0)`);
+      /* Tie-back knots at 58% height */
+      if (lTbRef.current) lTbRef.current.setAttribute('transform', `translate(${W_BASE - 14}, ${H * 0.58})`);
+      if (rTbRef.current) rTbRef.current.setAttribute('transform', `translate(${W - W_BASE + 14}, ${H * 0.58})`);
 
       raf = requestAnimationFrame(tick);
     };
@@ -596,30 +601,30 @@ function CurtainFrame() {
         {/* Velvet gradients — userSpaceOnUse across W_BASE=92px for consistent sheen */}
         {/* Velvet gradient — multiple fold highlights simulate gathered fabric */}
         <linearGradient id="cfr-vl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="108" y2="0">
-          <stop offset="0%"   stopColor="hsl(0,65%,4%)"  />  {/* wall edge — near black */}
-          <stop offset="7%"   stopColor="hsl(0,72%,16%)" />  {/* first fold shadow */}
-          <stop offset="16%"  stopColor="hsl(0,80%,36%)" />  {/* first fold highlight */}
-          <stop offset="24%"  stopColor="hsl(0,76%,20%)" />  {/* between folds */}
-          <stop offset="34%"  stopColor="hsl(0,84%,44%)" />  {/* second fold peak */}
-          <stop offset="42%"  stopColor="hsl(0,78%,26%)" />  {/* valley */}
-          <stop offset="54%"  stopColor="hsl(0,82%,38%)" />  {/* third fold */}
-          <stop offset="65%"  stopColor="hsl(0,76%,22%)" />  {/* shadow */}
-          <stop offset="78%"  stopColor="hsl(0,80%,32%)" />  {/* fourth fold */}
-          <stop offset="90%"  stopColor="hsl(0,74%,14%)" />  {/* inner shadow */}
-          <stop offset="100%" stopColor="hsl(0,68%,8%)"  />  {/* inner edge dark */}
+          <stop offset="0%"   stopColor="hsl(0,0%,4%)"   />  {/* wall edge — near black */}
+          <stop offset="7%"   stopColor="hsl(0,0%,12%)"  />  {/* first fold shadow */}
+          <stop offset="16%"  stopColor="hsl(0,0%,24%)"  />  {/* first fold highlight */}
+          <stop offset="24%"  stopColor="hsl(0,0%,14%)"  />  {/* between folds */}
+          <stop offset="34%"  stopColor="hsl(0,0%,30%)"  />  {/* second fold peak */}
+          <stop offset="42%"  stopColor="hsl(0,0%,18%)"  />  {/* valley */}
+          <stop offset="54%"  stopColor="hsl(0,0%,26%)"  />  {/* third fold */}
+          <stop offset="65%"  stopColor="hsl(0,0%,15%)"  />  {/* shadow */}
+          <stop offset="78%"  stopColor="hsl(0,0%,22%)"  />  {/* fourth fold */}
+          <stop offset="90%"  stopColor="hsl(0,0%,10%)"  />  {/* inner shadow */}
+          <stop offset="100%" stopColor="hsl(0,0%,6%)"   />  {/* inner edge dark */}
         </linearGradient>
         <linearGradient id="cfr-vr" gradientUnits="userSpaceOnUse" x1="100%" y1="0" x2="0%" y2="0">
-          <stop offset="0%"   stopColor="hsl(0,65%,4%)"  />
-          <stop offset="7%"   stopColor="hsl(0,72%,16%)" />
-          <stop offset="16%"  stopColor="hsl(0,80%,36%)" />
-          <stop offset="24%"  stopColor="hsl(0,76%,20%)" />
-          <stop offset="34%"  stopColor="hsl(0,84%,44%)" />
-          <stop offset="42%"  stopColor="hsl(0,78%,26%)" />
-          <stop offset="54%"  stopColor="hsl(0,82%,38%)" />
-          <stop offset="65%"  stopColor="hsl(0,76%,22%)" />
-          <stop offset="78%"  stopColor="hsl(0,80%,32%)" />
-          <stop offset="90%"  stopColor="hsl(0,74%,14%)" />
-          <stop offset="100%" stopColor="hsl(0,68%,8%)"  />
+          <stop offset="0%"   stopColor="hsl(0,0%,4%)"   />
+          <stop offset="7%"   stopColor="hsl(0,0%,12%)"  />
+          <stop offset="16%"  stopColor="hsl(0,0%,24%)"  />
+          <stop offset="24%"  stopColor="hsl(0,0%,14%)"  />
+          <stop offset="34%"  stopColor="hsl(0,0%,30%)"  />
+          <stop offset="42%"  stopColor="hsl(0,0%,18%)"  />
+          <stop offset="54%"  stopColor="hsl(0,0%,26%)"  />
+          <stop offset="65%"  stopColor="hsl(0,0%,15%)"  />
+          <stop offset="78%"  stopColor="hsl(0,0%,22%)"  />
+          <stop offset="90%"  stopColor="hsl(0,0%,10%)"  />
+          <stop offset="100%" stopColor="hsl(0,0%,6%)"   />
         </linearGradient>
         {/* Pleat shadow — subtle dark ribs for velvet depth */}
         <linearGradient id="cfr-pl" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -678,6 +683,26 @@ function CurtainFrame() {
       <rect ref={rRailRef} x="0" y="0" width="94" height="4"
         fill="url(#cfr-rail-grad)" opacity="0.92"
         style={{ filter: 'drop-shadow(0 0 8px hsl(42,88%,52%)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))' }} />
+
+      {/* ── Left tie-back knot — position updated by tick() via lTbRef ── */}
+      <g ref={lTbRef} style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.8))' }}>
+        <ellipse cx="0" cy="-6" rx="6" ry="20"
+          fill="none" stroke="hsl(44,78%,42%)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="0" cy="0" r="10" fill="hsl(40,78%,32%)" />
+        <circle cx="0" cy="0" r="7"  fill="hsl(44,88%,50%)" />
+        <circle cx="0" cy="0" r="4"  fill="hsl(48,95%,68%)" />
+        <circle cx="0" cy="0" r="1.5" fill="hsl(50,100%,88%)" />
+      </g>
+
+      {/* ── Right tie-back knot — position updated by tick() via rTbRef ── */}
+      <g ref={rTbRef} style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.8))' }}>
+        <ellipse cx="0" cy="-6" rx="6" ry="20"
+          fill="none" stroke="hsl(44,78%,42%)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="0" cy="0" r="10" fill="hsl(40,78%,32%)" />
+        <circle cx="0" cy="0" r="7"  fill="hsl(44,88%,50%)" />
+        <circle cx="0" cy="0" r="4"  fill="hsl(48,95%,68%)" />
+        <circle cx="0" cy="0" r="1.5" fill="hsl(50,100%,88%)" />
+      </g>
 
       {/* ── Left tassel ── */}
       <g style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.7))' }}>
@@ -746,237 +771,141 @@ function ArtSparkles() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO COVERFLOW — 3D carousel
+   HERO GALLERY SLIDER — sliding carousel: entire frame moves on transition
 ═══════════════════════════════════════════════════════════════════════════ */
-function HeroCoverflow({ artworks }: { artworks: ArtworkInfo[] }) {
-  const [active, setActive] = useState(0);
-  const items = artworks.slice(0, Math.min(artworks.length, 7));
-  const dragStart = useRef(0);
-  const isDragging = useRef(false);
-  const isHovered = useRef(false);
-  const velocity = useRef(0);
+function HeroGallerySlider({ artworks }: { artworks: ArtworkInfo[] }) {
+  const items = artworks.slice(0, 8);
+  const [index, setIndex] = useState(0);
+  const [dragDelta, setDragDelta] = useState(0);
+  const dragging = useRef(false);
+  const startX = useRef(0);
   const lastX = useRef(0);
-  const lastTime = useRef(0);
+  const velX = useRef(0);
+  const lastT = useRef(0);
+  const isHovered = useRef(false);
 
-  const prev = useCallback(() => setActive(i => (i - 1 + items.length) % items.length), [items.length]);
-  const next = useCallback(() => setActive(i => (i + 1) % items.length), [items.length]);
+  const goTo = useCallback((i: number) => {
+    setIndex(i);
+    setDragDelta(0);
+    dragging.current = false;
+  }, []);
 
-  /* Auto-play: advance every 3.5s, pause when hovered or dragging */
+  const prev = useCallback(() => goTo((index - 1 + items.length) % items.length), [index, items.length, goTo]);
+  const next = useCallback(() => goTo((index + 1) % items.length), [index, items.length, goTo]);
+
+  /* Auto-play */
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (!isHovered.current && !isDragging.current) {
-        setActive(i => (i + 1) % items.length);
-      }
-    }, 3500);
-    return () => clearInterval(timer);
-  }, [items.length]);
+    const t = setInterval(() => {
+      if (!isHovered.current && !dragging.current) next();
+    }, 4000);
+    return () => clearInterval(t);
+  }, [next]);
 
+  /* Keyboard */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const h = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') prev();
       if (e.key === 'ArrowRight') next();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [prev, next]);
 
-  /* Use shared demo image map */
-  const demoImgs = DEMO_IMGS;
+  if (!items.length) return null;
+
+  /* Pointer handlers */
+  const onDown = (x: number) => {
+    startX.current = x; lastX.current = x;
+    lastT.current = Date.now(); velX.current = 0;
+    dragging.current = true; setDragDelta(0);
+  };
+  const onMove = (x: number) => {
+    if (!dragging.current) return;
+    const now = Date.now(); const dt = now - lastT.current;
+    if (dt > 0) velX.current = (x - lastX.current) / dt;
+    lastX.current = x; lastT.current = now;
+    setDragDelta(x - startX.current);
+  };
+  const onUp = (x: number) => {
+    if (!dragging.current) return;
+    const d = x - startX.current;
+    if (Math.abs(d) > 55 || Math.abs(velX.current) > 0.35) {
+      if (d > 0) prev(); else next();
+    } else {
+      goTo(index);
+    }
+  };
+
+  const imgSrc = (a: ArtworkInfo) =>
+    DEMO_IMGS[a.address] ||
+    getIpfsUrlsForFallback(a.ipfsCID)[0] ||
+    `https://picsum.photos/seed/${a.address}/400/560`;
 
   return (
     <div
-      className="cf-wrapper"
+      className="hgs-carousel"
       onMouseEnter={() => { isHovered.current = true; }}
-      onMouseLeave={() => { isHovered.current = false; }}
+      onMouseLeave={() => { isHovered.current = false; if (dragging.current) onUp(lastX.current); }}
+      onMouseDown={e => onDown(e.clientX)}
+      onMouseMove={e => onMove(e.clientX)}
+      onMouseUp={e => onUp(e.clientX)}
+      onTouchStart={e => onDown(e.touches[0].clientX)}
+      onTouchMove={e => onMove(e.touches[0].clientX)}
+      onTouchEnd={e => onUp(e.changedTouches[0].clientX)}
     >
+      {/* Sliding track — translateX moves entire frame+artwork */}
       <div
-        className="cf-stage"
-        onMouseDown={e => {
-          dragStart.current = e.clientX;
-          lastX.current = e.clientX;
-          lastTime.current = Date.now();
-          velocity.current = 0;
-          isDragging.current = false;
-        }}
-        onMouseMove={e => {
-          if (Math.abs(e.clientX - dragStart.current) > 8) isDragging.current = true;
-          const now = Date.now();
-          const dt = now - lastTime.current;
-          if (dt > 0) velocity.current = (e.clientX - lastX.current) / dt;
-          lastX.current = e.clientX;
-          lastTime.current = now;
-        }}
-        onMouseUp={e => {
-          const d = e.clientX - dragStart.current;
-          const v = velocity.current;
-          if (Math.abs(v) > 0.3 || Math.abs(d) > 40) {
-            if (d > 0 || v > 0.3) prev(); else next();
-          }
-          isDragging.current = false;
-          velocity.current = 0;
-        }}
-        onTouchStart={e => { dragStart.current = e.touches[0].clientX; }}
-        onTouchEnd={e => {
-          const d = e.changedTouches[0].clientX - dragStart.current;
-          if (d > 45) prev(); else if (d < -45) next();
+        className="hgs-track"
+        style={{
+          transform: `translateX(calc(-${index * 100}% + ${dragDelta}px))`,
+          transition: dragging.current ? 'none' : 'transform 0.52s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {items.map((artwork, i) => {
-          /* Circular offset: always take the shortest path so wrapping is smooth */
-          let offset = i - active;
-          if (offset > items.length / 2) offset -= items.length;
-          if (offset < -items.length / 2) offset += items.length;
-          const abs = Math.abs(offset);
-          if (abs > 2) return null;
-
-          const imgSrc = demoImgs[artwork.address]
-            || getIpfsUrlsForFallback(artwork.ipfsCID)[0]
-            || `https://picsum.photos/seed/${artwork.address}/400/600`;
-          const progress = graduationProgress(artwork.reserve);
-          const isGrad = artwork.graduated;
-          const isGrading = progress >= 80 && !isGrad;
-
-          /* 3D coverflow — ARC values matching reference design */
-          const ARC: Record<number, { tx: number; tz: number; ry: number; sc: number; op: number; blur: number }> = {
-            0:  { tx:    0, tz:    0, ry:   0, sc: 1.00, op: 1.00, blur: 0   },
-            1:  { tx:  130, tz:  -98, ry: -45, sc: 0.74, op: 0.54, blur: 2.8 },
-           '-1':{ tx: -130, tz:  -98, ry:  45, sc: 0.74, op: 0.54, blur: 2.8 },
-            2:  { tx:  265, tz: -220, ry: -56, sc: 0.52, op: 0.22, blur: 6.5 },
-           '-2':{ tx: -265, tz: -220, ry:  56, sc: 0.52, op: 0.22, blur: 6.5 },
-          };
-          const arc    = ARC[offset] ?? ARC[offset > 0 ? 2 : -2];
-          const rotY   = arc.ry;
-          const transX = arc.tx;
-          const transZ = arc.tz;
-          const transY = abs === 0 ? -10 : abs === 1 ? 12 : 28;
-          const scale  = arc.sc;
-          const opac   = arc.op;
-          const z      = 30 - abs * 10;
-          const bright = abs === 0 ? 1 : abs === 1 ? 0.52 : 0.25;
-          const blur   = arc.blur;
-
-          const handleClick = () => {
-            if (isDragging.current) return;
-            if (offset === 0) {
-              window.location.href = `/artwork/${artwork.address}`;
-            } else if (offset < 0) {
-              prev();
-            } else {
-              next();
-            }
-          };
-
-          return (
-            <div
-              key={artwork.address}
-              className="cf-item"
-              style={{
-                transform: `translateX(${transX}px) translateZ(${transZ}px) rotateY(${rotY}deg) translateY(${transY}px) scale(${scale})`,
-                opacity: opac,
-                zIndex: z,
-                filter: `brightness(${bright}) blur(${blur}px)`,
-                pointerEvents: abs <= 1 ? 'auto' : 'none',
-                cursor: abs <= 1 ? 'pointer' : 'default',
-              }}
-              onClick={handleClick}
+        {items.map((artwork) => (
+          <div key={artwork.address} className="hgs-slide">
+            <Link
+              href={`/artwork/${artwork.address}`}
+              className="hgs-slide-inner"
+              onClick={e => { if (Math.abs(dragDelta) > 10) e.preventDefault(); }}
+              draggable={false}
             >
-              <div className={`cf-card${offset === 0 ? ' cf-card--active' : ''}${isGrad || isGrading ? ' cf-card--gold' : ''}`}>
-                {/* Image area */}
-                <div className="cf-img-area">
-                  {/* Spotlight rim light — top edge of active card */}
-                  {offset === 0 && (
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0,
-                      height: 3, zIndex: 20, pointerEvents: 'none',
-                      background: 'linear-gradient(90deg, transparent 4%, rgba(255,252,195,0.95) 18%, rgba(255,255,220,1.0) 50%, rgba(255,252,195,0.95) 82%, transparent 96%)',
-                      boxShadow: '0 0 16px rgba(255,248,170,0.8), 0 1px 28px rgba(255,242,140,0.35)',
-                    }} />
-                  )}
-                  {/* Warm spotlight wash — upper area of active card */}
-                  {offset === 0 && (
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: '35%',
-                      background: 'linear-gradient(180deg, rgba(255,248,175,0.10) 0%, transparent 100%)',
-                      zIndex: 18, pointerEvents: 'none',
-                    }} />
-                  )}
-                  <img
-                    src={imgSrc}
-                    alt={artwork.name}
-                    className="cf-img"
-                    referrerPolicy="no-referrer"
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = `https://picsum.photos/seed/${artwork.address}/400/600`; }}
-                  />
-                  <div className="cf-img-overlay" />
-                  {offset === 0 && <ArtSparkles />}
-                  {offset === 0 && <div className="cf-img-tag">{artwork.name}</div>}
-                  {(isGrad || isGrading) && (
-                    <div className="cf-state-tag">
-                      {isGrad ? 'GRADUATED' : `${progress.toFixed(0)}% bonded`}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info below image — only active card */}
-                {offset === 0 && (
-                  <div className="cf-info">
-                    <div className="cf-info-row1">
-                      <span className="cf-title">{artwork.name}</span>
-                      <span className="cf-price mono">{formatEth(artwork.price, 4)}</span>
-                    </div>
-                    <div className="cf-info-row2">
-                      <span className="cf-artist mono">
-                        {shortAddress(artwork.artist)}
-                        {Number(artwork.createdAt) > 0 && (
-                          <span style={{ color: 'var(--text-muted)' }}> · {new Date(Number(artwork.createdAt) * 1000).getFullYear()}</span>
-                        )}
-                      </span>
-                      {Number(artwork.supply) > 0 && (
-                        <span className="cf-trend mono">+{((Number(artwork.supply) * 0.1) + 0.5).toFixed(1)}% ↑</span>
-                      )}
-                    </div>
-                    <div className="cf-progress-wrap">
-                      <div className="cf-progress-track">
-                        <div
-                          className={isGrading || isGrad ? 'progress-bar-graduating' : 'progress-bar'}
-                          style={{ width: `${Math.max(progress, 1)}%`, height: '100%' }}
-                        />
-                      </div>
-                      <div className="cf-progress-labels mono">
-                        <span>{formatEth(artwork.reserve, 2)} / 24.0 reserve</span>
-                        <span style={{ color: isGrading ? 'var(--gold)' : 'var(--text-muted)' }}>{progress.toFixed(0)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {/* Artwork sits inside the frame PNG's white opening */}
+              <div className="hgs-artwork-area">
+                <img
+                  src={imgSrc(artwork)}
+                  alt={artwork.name}
+                  className="hgs-artwork-img"
+                  referrerPolicy="no-referrer"
+                  draggable={false}
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      `https://picsum.photos/seed/${artwork.address}/400/560`;
+                  }}
+                />
               </div>
-            </div>
-          );
-        })}
+              {/* Museum nameplate inside frame */}
+              <div className="hgs-nameplate">
+                <span className="hgs-nameplate-text">{artwork.name}</span>
+              </div>
+            </Link>
+          </div>
+        ))}
       </div>
 
-      {/* Royalty pill */}
-      <div className="cf-royalty-pill">5% artist royalty · every trade</div>
-
-      {/* Nav */}
-      <div className="cf-nav">
-        <button className="cf-arrow" onClick={prev} aria-label="Prev">‹</button>
-        <div className="cf-dots">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              className={`cf-dot${i === active ? ' cf-dot--on' : ''}`}
-              onClick={() => setActive(i)}
-              aria-label={`Card ${i + 1}`}
-            />
-          ))}
-        </div>
-        <button className="cf-arrow" onClick={next} aria-label="Next">›</button>
+      {/* Dots navigation */}
+      <div className="hgs-dots">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            className={`hgs-dot${i === index ? ' hgs-dot--on' : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={`Artwork ${i + 1}`}
+          />
+        ))}
       </div>
     </div>
   );
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HERO SECTION
@@ -992,7 +921,7 @@ function HeroSection({ artworks }: { artworks: ArtworkInfo[] }) {
       {/* Real gallery background */}
       <div
         className="hero-bg"
-        style={{ backgroundImage: "url('/gallery-bg.png')" }}
+        style={{ backgroundImage: "url('/backgroundend.png')" }}
         aria-hidden="true"
       />
       {/* Dark overlay to blend bg with content */}
@@ -1042,12 +971,11 @@ function HeroSection({ artworks }: { artworks: ArtworkInfo[] }) {
           </div>
         </div>
 
-        {/* ── Right coverflow ── */}
+        {/* ── Right gallery slider ── */}
         <div className="hero-cf">
-          <HeroCoverflow artworks={displayArtworks} />
+          <HeroGallerySlider artworks={displayArtworks} />
         </div>
       </div>
-
     </section>
   );
 }
