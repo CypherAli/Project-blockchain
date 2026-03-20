@@ -125,6 +125,20 @@ export interface TradeEvent {
   txHash: `0x${string}`;
 }
 
+// ─── USD price helper (mock rate, updated when real price feed is available) ──
+/** Mock ETH→USD rate. Replace with a real price feed when live. */
+export const ETH_USD_RATE = 3_500; // $3,500/ETH
+
+/** Format ETH wei value as USD string: "$1,234.56" */
+export function formatUsd(wei: bigint, decimals = 2): string {
+  const eth = Number(wei) / 1e18;
+  const usd = eth * ETH_USD_RATE;
+  if (usd >= 1_000_000) return `$${(usd / 1_000_000).toFixed(2)}M`;
+  if (usd >= 1_000)     return `$${(usd / 1_000).toFixed(1)}K`;
+  if (usd < 0.01)       return `<$0.01`;
+  return `$${usd.toFixed(decimals)}`;
+}
+
 // ─── Math utilities (re-exported from shared/) ────────────────────────────────
 
 export {

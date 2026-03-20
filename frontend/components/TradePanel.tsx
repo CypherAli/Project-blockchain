@@ -13,7 +13,25 @@ interface TradePanelProps {
   onTradeSuccess?: () => void;
 }
 
+// Quick share amounts
 const QUICK_AMOUNTS = [1, 5, 10, 100];
+// Quick ETH amounts for buy
+const QUICK_ETH = [
+  { label: '0.01 Ξ', wei: 10_000_000_000_000_000n },
+  { label: '0.05 Ξ', wei: 50_000_000_000_000_000n },
+  { label: '0.1 Ξ',  wei: 100_000_000_000_000_000n },
+  { label: '0.5 Ξ',  wei: 500_000_000_000_000_000n },
+];
+
+/** Estimate shares you can buy with `ethWei` given current price and k */
+function estimateSharesFromEth(ethWei: bigint, price: bigint, k: bigint): bigint {
+  if (price === 0n) return 0n;
+  // Approximate: shares ≈ ethWei / price (ignores curve steepness & fees for quick estimate)
+  // Use gross estimate then round down
+  const gross = ethWei * 10n / 16n; // ~94% after 6% fees
+  const est = gross / price;
+  return est > 0n ? est : 1n;
+}
 
 function QuoteLine({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
@@ -31,10 +49,18 @@ function QuoteLine({ label, value, highlight = false }: { label: string; value: 
 export default function TradePanel({ artwork, onTradeSuccess }: TradePanelProps) {
   const [tab, setTab]            = useState<'buy' | 'sell'>('buy');
   const [amountStr, setAmount]   = useState('');
+  const [inputMode, setInputMode] = useState<'shares' | 'eth'>('shares');
   const { address, isConnected } = useAccount();
   const toast                    = useToast();
 
-  const amount = amountStr && parseInt(amountStr) > 0 ? BigInt(parseInt(amountStr)) : undefined;
+  // In ETH mode, estimate shares from ETH input
+  const ethInputWei = inputMode === 'eth' && amountStr && parseFloat(amountStr) > 0
+    ? BigInt(Math.floor(parseFloat(amountStr) * 1e18))
+    : undefined;
+  const amountFromEth = ethInputWei ? estimateSharesFromEth(ethInputWei, artwork.price, artwork.k) : undefined;
+  const amount = inputMode === 'eth'
+    ? amountFromEth
+    : (amountStr && parseInt(amountStr) > 0 ? BigInt(parseInt(amountStr)) : undefined);
 
   const { data: buyQuote }  = useQuoteBuy(artwork.address, amount);
   const { data: sellQuote } = useQuoteSell(artwork.address, amount);
@@ -45,7 +71,7 @@ export default function TradePanel({ artwork, onTradeSuccess }: TradePanelProps)
   const { sell, isPending: sellPending, isConfirming: sellConfirming } = useSellShares(artwork.address);
   const isLoading = buyPending || buyConfirming || sellPending || sellConfirming;
 
-  useEffect(() => { setAmount(''); }, [tab]);
+  useEffect(() => { setAmount(''); setInputMode('shares'); }, [tab]);
 
   const hasInsufficientShares = tab === 'sell' && amount !== undefined && userBalance < amount;
 
@@ -110,8 +136,23 @@ export default function TradePanel({ artwork, onTradeSuccess }: TradePanelProps)
 
       {/* Amount */}
       <div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>shares to {tab}</div>
-        <input type="number" value={amountStr} onChange={(e) => setAmount(e.target.value)} placeholder="0" min="1" step="1"
+        {/* Mode toggle (buy only) */}
+        {tab === 'buy' && (
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+            {(['shares', 'eth'] as const).map(m => (
+              <button key={m} onClick={() => { setInputMode(m); setAmount(''); }}
+                style={{ flex: 1, padding: '4px 0', background: inputMode === m ? 'var(--surface-3)' : 'transparent', border: `1px solid ${inputMode === m ? 'var(--border-focus)' : 'var(--border)'}`, borderRadius: 'var(--r-sm)', color: inputMode === m ? 'var(--text)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
+                {m === 'shares' ? 'by shares' : 'by ETH'}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', marginBottom: 6 }}>
+          {tab === 'sell' ? 'shares to sell' : inputMode === 'eth' ? 'ETH amount to spend' : 'shares to buy'}
+        </div>
+        <input type="number" value={amountStr} onChange={(e) => setAmount(e.target.value)}
+          placeholder={inputMode === 'eth' ? '0.00' : '0'} min={inputMode === 'eth' ? '0.001' : '1'} step={inputMode === 'eth' ? '0.01' : '1'}
           style={{ width: '100%', background: 'var(--surface-2)', border: `1px solid ${hasInsufficientShares ? 'var(--terra)' : 'var(--border)'}`, borderRadius: 'var(--r-md)', padding: '10px 12px', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 16, outline: 'none', boxSizing: 'border-box' as const }}
           onFocus={e => (e.currentTarget.style.borderColor = hasInsufficientShares ? 'var(--terra)' : 'var(--border-focus)')}
           onBlur={e  => (e.currentTarget.style.borderColor = hasInsufficientShares ? 'var(--terra)' : 'var(--border)')}
@@ -121,16 +162,33 @@ export default function TradePanel({ artwork, onTradeSuccess }: TradePanelProps)
             insufficient shares (balance: {userBalance.toString()})
           </div>
         )}
+
+        {/* Quick presets */}
         <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-          {QUICK_AMOUNTS.map((n) => (
-            <button key={n} onClick={() => setAmount(String(n))}
-              style={{ flex: 1, padding: '4px 0', background: amountStr === String(n) ? 'var(--surface-3)' : 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: amountStr === String(n) ? 'var(--text)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}
-            >{n}</button>
-          ))}
-          {tab === 'sell' && userBalance > 0n && (
-            <button onClick={() => setAmount(userBalance.toString())}
-              style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--terra)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}
-            >max</button>
+          {tab === 'buy' && inputMode === 'eth' ? (
+            <>
+              {QUICK_ETH.map((q) => (
+                <button key={q.label} onClick={() => setAmount(String(Number(q.wei) / 1e18))}
+                  style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 10, cursor: 'pointer' }}>
+                  {q.label}
+                </button>
+              ))}
+            </>
+          ) : (
+            <>
+              {QUICK_AMOUNTS.map((n) => (
+                <button key={n} onClick={() => setAmount(String(n))}
+                  style={{ flex: 1, padding: '4px 0', background: amountStr === String(n) ? 'var(--surface-3)' : 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: amountStr === String(n) ? 'var(--text)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
+                  {n}
+                </button>
+              ))}
+              {tab === 'sell' && userBalance > 0n && (
+                <button onClick={() => setAmount(userBalance.toString())}
+                  style={{ flex: 1, padding: '4px 0', background: 'transparent', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--terra)', fontFamily: 'var(--font-mono)', fontSize: 11, cursor: 'pointer' }}>
+                  max
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

@@ -74,7 +74,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <Providers cookie={cookie}>
           <Navbar />
-          <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 88px 64px', overflowX: 'hidden' }}>
+          <main style={{ minHeight: 'calc(100vh - 64px)' }}>
             {children}
           </main>
         </Providers>

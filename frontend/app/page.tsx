@@ -2,15 +2,10 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useAllArtworks } from '@/lib/hooks';
+import Sidebar from '@/components/Sidebar';
 
-/* Three.js spotlight — loaded client-only (no SSR) */
-const VolumetricSpotlight = dynamic(
-  () => import('@/components/VolumetricSpotlight'),
-  { ssr: false },
-);
 import { ArtworkListSkeleton } from '@/components/ui/Skeleton';
 import {
   type ArtworkInfo,
@@ -158,13 +153,6 @@ const MusicPlayer = forwardRef<MusicPlayerHandle>(function MusicPlayer(_, ref) {
           title={effectiveMute ? 'Music muted — click to unmute' : 'Music playing'}
           style={{ position: 'relative' }}
         >
-          {isPlaying && !effectiveMute && (
-            <>
-              <span className="gram-note">♪</span>
-              <span className="gram-note">♫</span>
-              <span className="gram-note">♩</span>
-            </>
-          )}
           {/* Vintage gramophone SVG */}
           <svg viewBox="0 0 80 80" width="80" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
             <defs>
@@ -316,7 +304,7 @@ function CurtainEntrance({ onEnter }: { onEnter: () => void }) {
         </div>
 
         <div className="ce-divider" />
-        <p className="ce-sub-text">NEO-LUXURY CLASSICAL ART GALLERY</p>
+        <p className="ce-sub-text">Art Trading on Ethereum</p>
       </div>
 
       {/* Gold rail */}
@@ -353,6 +341,8 @@ function CurtainFrame() {
   const rP3       = useRef<SVGPathElement>(null);
   const rTex      = useRef<SVGPathElement>(null);
   const rRailRef  = useRef<SVGRectElement>(null);
+  const lTbRef    = useRef<SVGGElement>(null);   /* left tie-back knot */
+  const rTbRef    = useRef<SVGGElement>(null);   /* right tie-back knot */
   const [heroVisible, setHeroVisible] = useState(true);
   const [heroH, setHeroH] = useState(0);
 
@@ -569,6 +559,9 @@ function CurtainFrame() {
 
       if (rRailRef.current) rRailRef.current.setAttribute('x', String(W - W_BASE - 2));
       if (rTasselEl) rTasselEl.setAttribute('transform', `translate(${W}, 0)`);
+      /* Tie-back knots at 58% height */
+      if (lTbRef.current) lTbRef.current.setAttribute('transform', `translate(${W_BASE - 14}, ${H * 0.58})`);
+      if (rTbRef.current) rTbRef.current.setAttribute('transform', `translate(${W - W_BASE + 14}, ${H * 0.58})`);
 
       raf = requestAnimationFrame(tick);
     };
@@ -590,7 +583,7 @@ function CurtainFrame() {
       ref={svgRef}
       aria-hidden="true"
       style={{
-        position: 'fixed', top: 0, left: 0,
+        position: 'fixed', inset: 0,
         width: '100%', height: heroH || '100vh',
         zIndex: 100, pointerEvents: 'none', overflow: 'visible',
       }}
@@ -608,30 +601,30 @@ function CurtainFrame() {
         {/* Velvet gradients — userSpaceOnUse across W_BASE=92px for consistent sheen */}
         {/* Velvet gradient — multiple fold highlights simulate gathered fabric */}
         <linearGradient id="cfr-vl" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="108" y2="0">
-          <stop offset="0%"   stopColor="hsl(0,65%,4%)"  />  {/* wall edge — near black */}
-          <stop offset="7%"   stopColor="hsl(0,72%,16%)" />  {/* first fold shadow */}
-          <stop offset="16%"  stopColor="hsl(0,80%,36%)" />  {/* first fold highlight */}
-          <stop offset="24%"  stopColor="hsl(0,76%,20%)" />  {/* between folds */}
-          <stop offset="34%"  stopColor="hsl(0,84%,44%)" />  {/* second fold peak */}
-          <stop offset="42%"  stopColor="hsl(0,78%,26%)" />  {/* valley */}
-          <stop offset="54%"  stopColor="hsl(0,82%,38%)" />  {/* third fold */}
-          <stop offset="65%"  stopColor="hsl(0,76%,22%)" />  {/* shadow */}
-          <stop offset="78%"  stopColor="hsl(0,80%,32%)" />  {/* fourth fold */}
-          <stop offset="90%"  stopColor="hsl(0,74%,14%)" />  {/* inner shadow */}
-          <stop offset="100%" stopColor="hsl(0,68%,8%)"  />  {/* inner edge dark */}
+          <stop offset="0%"   stopColor="hsl(0,0%,4%)"   />  {/* wall edge — near black */}
+          <stop offset="7%"   stopColor="hsl(0,0%,12%)"  />  {/* first fold shadow */}
+          <stop offset="16%"  stopColor="hsl(0,0%,24%)"  />  {/* first fold highlight */}
+          <stop offset="24%"  stopColor="hsl(0,0%,14%)"  />  {/* between folds */}
+          <stop offset="34%"  stopColor="hsl(0,0%,30%)"  />  {/* second fold peak */}
+          <stop offset="42%"  stopColor="hsl(0,0%,18%)"  />  {/* valley */}
+          <stop offset="54%"  stopColor="hsl(0,0%,26%)"  />  {/* third fold */}
+          <stop offset="65%"  stopColor="hsl(0,0%,15%)"  />  {/* shadow */}
+          <stop offset="78%"  stopColor="hsl(0,0%,22%)"  />  {/* fourth fold */}
+          <stop offset="90%"  stopColor="hsl(0,0%,10%)"  />  {/* inner shadow */}
+          <stop offset="100%" stopColor="hsl(0,0%,6%)"   />  {/* inner edge dark */}
         </linearGradient>
         <linearGradient id="cfr-vr" gradientUnits="userSpaceOnUse" x1="100%" y1="0" x2="0%" y2="0">
-          <stop offset="0%"   stopColor="hsl(0,65%,4%)"  />
-          <stop offset="7%"   stopColor="hsl(0,72%,16%)" />
-          <stop offset="16%"  stopColor="hsl(0,80%,36%)" />
-          <stop offset="24%"  stopColor="hsl(0,76%,20%)" />
-          <stop offset="34%"  stopColor="hsl(0,84%,44%)" />
-          <stop offset="42%"  stopColor="hsl(0,78%,26%)" />
-          <stop offset="54%"  stopColor="hsl(0,82%,38%)" />
-          <stop offset="65%"  stopColor="hsl(0,76%,22%)" />
-          <stop offset="78%"  stopColor="hsl(0,80%,32%)" />
-          <stop offset="90%"  stopColor="hsl(0,74%,14%)" />
-          <stop offset="100%" stopColor="hsl(0,68%,8%)"  />
+          <stop offset="0%"   stopColor="hsl(0,0%,4%)"   />
+          <stop offset="7%"   stopColor="hsl(0,0%,12%)"  />
+          <stop offset="16%"  stopColor="hsl(0,0%,24%)"  />
+          <stop offset="24%"  stopColor="hsl(0,0%,14%)"  />
+          <stop offset="34%"  stopColor="hsl(0,0%,30%)"  />
+          <stop offset="42%"  stopColor="hsl(0,0%,18%)"  />
+          <stop offset="54%"  stopColor="hsl(0,0%,26%)"  />
+          <stop offset="65%"  stopColor="hsl(0,0%,15%)"  />
+          <stop offset="78%"  stopColor="hsl(0,0%,22%)"  />
+          <stop offset="90%"  stopColor="hsl(0,0%,10%)"  />
+          <stop offset="100%" stopColor="hsl(0,0%,6%)"   />
         </linearGradient>
         {/* Pleat shadow — subtle dark ribs for velvet depth */}
         <linearGradient id="cfr-pl" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -691,6 +684,26 @@ function CurtainFrame() {
         fill="url(#cfr-rail-grad)" opacity="0.92"
         style={{ filter: 'drop-shadow(0 0 8px hsl(42,88%,52%)) drop-shadow(0 2px 4px rgba(0,0,0,0.6))' }} />
 
+      {/* ── Left tie-back knot — position updated by tick() via lTbRef ── */}
+      <g ref={lTbRef} style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.8))' }}>
+        <ellipse cx="0" cy="-6" rx="6" ry="20"
+          fill="none" stroke="hsl(44,78%,42%)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="0" cy="0" r="10" fill="hsl(40,78%,32%)" />
+        <circle cx="0" cy="0" r="7"  fill="hsl(44,88%,50%)" />
+        <circle cx="0" cy="0" r="4"  fill="hsl(48,95%,68%)" />
+        <circle cx="0" cy="0" r="1.5" fill="hsl(50,100%,88%)" />
+      </g>
+
+      {/* ── Right tie-back knot — position updated by tick() via rTbRef ── */}
+      <g ref={rTbRef} style={{ filter: 'drop-shadow(0 3px 10px rgba(0,0,0,0.8))' }}>
+        <ellipse cx="0" cy="-6" rx="6" ry="20"
+          fill="none" stroke="hsl(44,78%,42%)" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="0" cy="0" r="10" fill="hsl(40,78%,32%)" />
+        <circle cx="0" cy="0" r="7"  fill="hsl(44,88%,50%)" />
+        <circle cx="0" cy="0" r="4"  fill="hsl(48,95%,68%)" />
+        <circle cx="0" cy="0" r="1.5" fill="hsl(50,100%,88%)" />
+      </g>
+
       {/* ── Left tassel ── */}
       <g style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.7))' }}>
         <circle cx="92" cy="4" r="6" fill="hsl(44,88%,55%)" />
@@ -711,192 +724,46 @@ function CurtainFrame() {
   );
 }
 
-/* Demo artworks — 6 greatest masterpieces of all time */
-const DEMO_ARTWORKS: ArtworkInfo[] = [
-  { address: '0xdemo1', name: 'Mona Lisa',                  artist: '0xLeonardo',  ipfsCID: '', price: 120_000_000_000_000_000n, supply: 9n, reserve: 24_200_000_000_000_000_000n, totalVolume: 463_000_000_000_000_000_000n, createdAt: 1705000000n, graduated: true,  k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-  { address: '0xdemo2', name: 'Girl with a Pearl Earring',  artist: '0xVermeer',   ipfsCID: '', price: 58_900_000_000_000_000n, supply: 7n, reserve: 14_200_000_000_000_000_000n, totalVolume: 187_000_000_000_000_000_000n, createdAt: 1705010000n, graduated: false, k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-  { address: '0xdemo3', name: 'The Great Wave',              artist: '0xHokusai',   ipfsCID: '', price: 43_100_000_000_000_000n, supply: 6n, reserve:  9_100_000_000_000_000_000n, totalVolume:  98_000_000_000_000_000_000n, createdAt: 1705020000n, graduated: false, k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-  { address: '0xdemo4', name: 'Starry Night',               artist: '0xVanGogh',   ipfsCID: '', price: 68_000_000_000_000_000n, supply: 8n, reserve: 18_500_000_000_000_000_000n, totalVolume: 320_000_000_000_000_000_000n, createdAt: 1705030000n, graduated: false, k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-  { address: '0xdemo5', name: 'The Kiss',                   artist: '0xKlimt',     ipfsCID: '', price: 31_200_000_000_000_000n, supply: 4n, reserve:  6_700_000_000_000_000_000n, totalVolume:  45_000_000_000_000_000_000n, createdAt: 1705040000n, graduated: false, k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-  { address: '0xdemo6', name: 'Birth of Venus',             artist: '0xBotticelli', ipfsCID: '', price: 22_400_000_000_000_000n, supply: 3n, reserve:  3_800_000_000_000_000_000n, totalVolume:  28_000_000_000_000_000_000n, createdAt: 1705050000n, graduated: false, k: 1n, p0: 1n, marketCap: 0n, totalRoyalties: 0n },
-];
-
-/* Shared high-quality Wikimedia Commons images for demo artworks */
-const DEMO_IMGS: Record<string, string> = {
-  '0xdemo1': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/402px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
-  '0xdemo2': 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/1665_Girl_with_a_Pearl_Earring.jpg/800px-1665_Girl_with_a_Pearl_Earring.jpg',
-  '0xdemo3': 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Tsunami_by_hokusai_19th_century.jpg/1280px-Tsunami_by_hokusai_19th_century.jpg',
-  '0xdemo4': 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg/1280px-Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg',
-  '0xdemo5': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg/1024px-The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg',
-  '0xdemo6': 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg/1280px-Sandro_Botticelli_-_La_nascita_di_Venere_-_Google_Art_Project_-_edited.jpg',
-};
+/* Demo artworks & images — imported from shared lib */
+import { DEMO_ARTWORKS, DEMO_IMGS } from '@/lib/demo';
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PORTAL VORTEX — ornate deep-blue frame behind center card
+   ART SPARKLES — golden light motes floating over artwork images
 ═══════════════════════════════════════════════════════════════════════════ */
-function PortalVortex() {
-  return (
-    <div style={{
-      position: 'absolute',
-      top: '50%', left: '50%',
-      transform: 'translate(-50%, -52%)',
-      width: 270, height: 356,
-      zIndex: 0,
-      borderRadius: 4,
-      overflow: 'hidden',
-      pointerEvents: 'none',
-      border: '1.5px solid rgba(155,122,24,0.18)',
-      boxShadow: 'inset 0 0 4px rgba(5,8,15,0.96), inset 0 0 6px rgba(110,86,18,0.12), inset 0 0 8px rgba(5,8,15,0.92), 0 0 36px rgba(0,0,0,0.80)',
-    }}>
-      <div style={{ position: 'absolute', inset: 0, background: '#040810' }} />
-      {/* Outer vortex ring */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 255, height: 255, borderRadius: '50%',
-        background: 'conic-gradient(from 0deg, rgba(22,40,100,0.45), rgba(7,16,46,0.15), rgba(16,32,88,0.40), rgba(5,13,38,0.18), rgba(18,36,95,0.38), rgba(22,40,100,0.45))',
-        filter: 'blur(20px)',
-      }} />
-      {/* Inner vortex */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 150, height: 150, borderRadius: '50%',
-        background: 'conic-gradient(from 55deg, rgba(26,50,122,0.55), rgba(9,20,56,0.22), rgba(22,46,115,0.50), rgba(26,50,122,0.55))',
-        filter: 'blur(12px)',
-      }} />
-      {/* Core glow */}
-      <div style={{
-        position: 'absolute', top: '50%', left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 65, height: 65, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(40,78,178,0.58) 0%, rgba(18,36,102,0.32) 50%, transparent 80%)',
-        filter: 'blur(10px)',
-      }} />
-      {/* Metallic frame accent lines */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 6, background: 'linear-gradient(90deg, transparent 6%, rgba(148,116,24,0.18) 28%, rgba(188,150,36,0.28) 50%, rgba(148,116,24,0.18) 72%, transparent 94%)' }} />
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 6, background: 'linear-gradient(90deg, transparent 6%, rgba(128,100,18,0.14) 28%, rgba(162,130,28,0.22) 50%, rgba(128,100,18,0.14) 72%, transparent 94%)' }} />
-      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: 6, background: 'linear-gradient(180deg, transparent 6%, rgba(142,112,22,0.16) 28%, rgba(170,135,30,0.24) 50%, rgba(142,112,22,0.16) 72%, transparent 94%)' }} />
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 6, background: 'linear-gradient(180deg, transparent 6%, rgba(128,100,18,0.13) 28%, rgba(155,122,26,0.20) 50%, rgba(128,100,18,0.13) 72%, transparent 94%)' }} />
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SLATE FLOOR — perspective reflection below the coverflow
-═══════════════════════════════════════════════════════════════════════════ */
-function SlateFloor({ active, items }: { active: number; items: Array<{ address: string; ipfsCID: string }> }) {
-  const N = items.length;
-  const neighbors = [-1, 0, 1].map(d => {
-    const idx = ((active + d) % N + N) % N;
-    const item = items[idx];
-    return {
-      d,
-      src: DEMO_IMGS[item.address]
-        || (item.ipfsCID ? `https://ipfs.io/ipfs/${item.ipfsCID}` : `https://picsum.photos/seed/${item.address}/218/400`),
-    };
-  });
-
-  return (
-    <div style={{
-      position: 'relative', width: '100%',
-      height: 44, overflow: 'hidden', marginTop: 2,
-      background: 'linear-gradient(180deg, #0b1524 0%, #040810 55%, #020508 100%)',
-      pointerEvents: 'none',
-    }}>
-      {/* Perspective grid SVG */}
-      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} preserveAspectRatio="none">
-        {[1, 2, 3, 4].map(i => (
-          <line key={'h' + i} x1="0" y1={`${i * 22}%`} x2="100%" y2={`${i * 22}%`}
-            stroke="rgba(90,110,150,0.05)" strokeWidth="0.5" />
-        ))}
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(i => (
-          <line key={'v' + i} x1={`${(i / 12) * 100}%`} y1="100%" x2="50%" y2="0%"
-            stroke="rgba(70,90,130,0.03)" strokeWidth="0.4" />
-        ))}
-      </svg>
-
-      {/* Matte reflections */}
-      {neighbors.map(({ d, src }) => {
-        const isC = d === 0;
-        const tx  = d === 0 ? 0 : d === -1 ? -130 * 0.62 : 130 * 0.62;
-        return (
-          <div key={d} style={{
-            position: 'absolute', top: 0, left: '50%',
-            transform: `translateX(-50%) translateX(${tx}px) scaleY(-1) scale(${isC ? 0.88 * 0.68 : 0.78 * 0.48})`,
-            transformOrigin: 'top center',
-            width: 248, height: 480,
-            opacity: isC ? 0.18 : 0.06,
-            filter: `blur(${isC ? 7 : 13}px) saturate(0.4)`,
-            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 35%, transparent 65%)',
-            maskImage:       'linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 35%, transparent 65%)',
-            borderRadius: 18, overflow: 'hidden',
-            zIndex: isC ? 4 : 2,
-          }}>
-            <img src={src} alt="" referrerPolicy="no-referrer"
-              style={{ width: '100%', height: 330, objectFit: 'cover', display: 'block' }} />
-          </div>
-        );
-      })}
-
-      {/* Gold floor pool glow */}
-      <div style={{
-        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: 280, height: 38, zIndex: 6,
-        background: 'radial-gradient(ellipse 55% 65% at 50% 0%, rgba(212,175,55,0.20) 0%, rgba(180,140,30,0.06) 55%, transparent 80%)',
-        filter: 'blur(8px)',
-      }} />
-
-      {/* Bottom depth fade */}
-      <div style={{
-        position: 'absolute', inset: 0, zIndex: 9,
-        background: 'linear-gradient(180deg, rgba(5,9,18,0) 0%, rgba(4,7,14,0.48) 38%, rgba(3,5,10,0.94) 100%)',
-      }} />
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CAROUSEL GOLD DUST — floating sparkle motes around the coverflow
-═══════════════════════════════════════════════════════════════════════════ */
-/* Hardcoded motes — avoids hydration mismatch from Math.random() */
-const DUST_MOTES = [
-  { x: '6%',  y: '78%', s: 2.6, dur: '3.4s', del: '-0.8s',  gold: true  },
-  { x: '18%', y: '55%', s: 2.0, dur: '2.7s', del: '-2.1s',  gold: false },
-  { x: '32%', y: '85%', s: 1.8, dur: '3.9s', del: '-1.4s',  gold: true  },
-  { x: '47%', y: '42%', s: 2.9, dur: '2.9s', del: '-0.3s',  gold: false },
-  { x: '61%', y: '70%', s: 2.3, dur: '3.1s', del: '-3.0s',  gold: true  },
-  { x: '74%', y: '52%', s: 1.6, dur: '4.2s', del: '-1.7s',  gold: false },
-  { x: '87%', y: '80%', s: 2.5, dur: '2.6s', del: '-0.9s',  gold: true  },
-  { x: '12%', y: '32%', s: 1.9, dur: '3.7s', del: '-2.5s',  gold: true  },
-  { x: '43%', y: '22%', s: 2.1, dur: '2.4s', del: '-1.2s',  gold: false },
-  { x: '68%', y: '38%', s: 1.7, dur: '4.4s', del: '-3.8s',  gold: true  },
-  { x: '28%', y: '48%', s: 3.1, dur: '3.0s', del: '-0.6s',  gold: false },
-  { x: '56%', y: '65%', s: 2.4, dur: '2.8s', del: '-2.9s',  gold: true  },
-  { x: '82%', y: '28%', s: 1.5, dur: '3.5s', del: '-4.1s',  gold: true  },
-  { x: '38%', y: '90%', s: 2.0, dur: '2.5s', del: '-1.9s',  gold: false },
+const ART_SPARKS = [
+  { x: '8%',  y: '78%', s: 2.2, dur: '4.4s', del: '0s'    },
+  { x: '15%', y: '42%', s: 1.6, dur: '6.1s', del: '-1.3s' },
+  { x: '20%', y: '14%', s: 2.6, dur: '5.5s', del: '-3.2s' },
+  { x: '28%', y: '63%', s: 1.8, dur: '7.2s', del: '-0.8s' },
+  { x: '36%', y: '30%', s: 1.4, dur: '4.8s', del: '-4.5s' },
+  { x: '44%', y: '86%', s: 2.4, dur: '5.9s', del: '-2.1s' },
+  { x: '50%', y: '52%', s: 1.3, dur: '8.0s', del: '-1.7s' },
+  { x: '56%', y: '18%', s: 2.0, dur: '4.2s', del: '-3.8s' },
+  { x: '63%', y: '72%', s: 1.7, dur: '6.4s', del: '-0.5s' },
+  { x: '71%', y: '38%', s: 2.3, dur: '5.1s', del: '-2.9s' },
+  { x: '79%', y: '58%', s: 1.5, dur: '7.5s', del: '-4.1s' },
+  { x: '84%', y: '22%', s: 1.9, dur: '4.6s', del: '-1.0s' },
+  { x: '89%', y: '82%', s: 2.7, dur: '5.8s', del: '-3.5s' },
+  { x: '24%', y: '90%', s: 1.4, dur: '6.8s', del: '-2.4s' },
+  { x: '73%', y: '93%', s: 1.8, dur: '4.0s', del: '-0.9s' },
+  { x: '48%', y: '06%', s: 2.1, dur: '5.3s', del: '-5.0s' },
 ] as const;
 
-function CarouselDust() {
+function ArtSparkles() {
   return (
-    <div className="cf-dust" aria-hidden="true">
-      {DUST_MOTES.map((m, i) => (
+    <div className="art-sparkles" aria-hidden="true">
+      {ART_SPARKS.map((sp, i) => (
         <span
           key={i}
-          className="cf-dust-mote"
+          className="art-spark"
           style={{
-            left: m.x,
-            top: m.y,
-            width:  m.s,
-            height: m.s,
-            background: m.gold
-              ? 'radial-gradient(circle, hsl(50,100%,85%) 0%, hsl(44,92%,62%) 60%, transparent 100%)'
-              : 'radial-gradient(circle, hsl(40,60%,90%) 0%, hsl(38,50%,70%) 60%, transparent 100%)',
-            boxShadow: m.gold ? `0 0 ${m.s * 2.5}px ${m.s * 0.8}px hsl(48,95%,68%/0.7)` : 'none',
-            '--dur':   m.dur,
-            '--del':   m.del,
-            '--drift': m.gold ? '8px' : '-6px',
-          } as React.CSSProperties}
+            left: sp.x,
+            top: sp.y,
+            width: sp.s,
+            height: sp.s,
+            animationDuration: sp.dur,
+            animationDelay: sp.del,
+          }}
         />
       ))}
     </div>
@@ -904,279 +771,138 @@ function CarouselDust() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HERO COVERFLOW — 3D carousel
+   HERO GALLERY SLIDER — sliding carousel: entire frame moves on transition
 ═══════════════════════════════════════════════════════════════════════════ */
-function HeroCoverflow({ artworks }: { artworks: ArtworkInfo[] }) {
-  const [active, setActive] = useState(0);
-  const items = artworks.slice(0, Math.min(artworks.length, 7));
-  const dragStart = useRef(0);
-  const isDragging = useRef(false);
-  const isHovered = useRef(false);
-  const velocity = useRef(0);
+function HeroGallerySlider({ artworks }: { artworks: ArtworkInfo[] }) {
+  const items = artworks.slice(0, 8);
+  const [index, setIndex] = useState(0);
+  const [dragDelta, setDragDelta] = useState(0);
+  const dragging = useRef(false);
+  const startX = useRef(0);
   const lastX = useRef(0);
-  const lastTime = useRef(0);
+  const velX = useRef(0);
+  const lastT = useRef(0);
+  const isHovered = useRef(false);
 
-  const prev = useCallback(() => setActive(i => (i - 1 + items.length) % items.length), [items.length]);
-  const next = useCallback(() => setActive(i => (i + 1) % items.length), [items.length]);
+  const goTo = useCallback((i: number) => {
+    setIndex(i);
+    setDragDelta(0);
+    dragging.current = false;
+  }, []);
 
-  /* Auto-play: advance every 3.5s, pause when hovered or dragging */
+  const prev = useCallback(() => goTo((index - 1 + items.length) % items.length), [index, items.length, goTo]);
+  const next = useCallback(() => goTo((index + 1) % items.length), [index, items.length, goTo]);
+
+  /* Auto-play */
   useEffect(() => {
-    const timer = setInterval(() => {
-      if (!isHovered.current && !isDragging.current) {
-        setActive(i => (i + 1) % items.length);
-      }
-    }, 3500);
-    return () => clearInterval(timer);
-  }, [items.length]);
+    const t = setInterval(() => {
+      if (!isHovered.current && !dragging.current) next();
+    }, 4000);
+    return () => clearInterval(t);
+  }, [next]);
 
+  /* Keyboard */
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
+    const h = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') prev();
       if (e.key === 'ArrowRight') next();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
   }, [prev, next]);
 
-  /* Use shared demo image map */
-  const demoImgs = DEMO_IMGS;
+  if (!items.length) return null;
+
+  /* Pointer handlers */
+  const onDown = (x: number) => {
+    startX.current = x; lastX.current = x;
+    lastT.current = Date.now(); velX.current = 0;
+    dragging.current = true; setDragDelta(0);
+  };
+  const onMove = (x: number) => {
+    if (!dragging.current) return;
+    const now = Date.now(); const dt = now - lastT.current;
+    if (dt > 0) velX.current = (x - lastX.current) / dt;
+    lastX.current = x; lastT.current = now;
+    setDragDelta(x - startX.current);
+  };
+  const onUp = (x: number) => {
+    if (!dragging.current) return;
+    const d = x - startX.current;
+    if (Math.abs(d) > 55 || Math.abs(velX.current) > 0.35) {
+      if (d > 0) prev(); else next();
+    } else {
+      goTo(index);
+    }
+  };
+
+  const imgSrc = (a: ArtworkInfo) =>
+    DEMO_IMGS[a.address] ||
+    getIpfsUrlsForFallback(a.ipfsCID)[0] ||
+    `https://picsum.photos/seed/${a.address}/400/560`;
 
   return (
     <div
-      className="cf-wrapper"
+      className="hgs-carousel"
       onMouseEnter={() => { isHovered.current = true; }}
-      onMouseLeave={() => { isHovered.current = false; }}
+      onMouseLeave={() => { isHovered.current = false; if (dragging.current) onUp(lastX.current); }}
+      onMouseDown={e => onDown(e.clientX)}
+      onMouseMove={e => onMove(e.clientX)}
+      onMouseUp={e => onUp(e.clientX)}
+      onTouchStart={e => onDown(e.touches[0].clientX)}
+      onTouchMove={e => onMove(e.touches[0].clientX)}
+      onTouchEnd={e => onUp(e.changedTouches[0].clientX)}
     >
+      {/* Sliding track — translateX moves entire frame+artwork */}
       <div
-        className="cf-stage"
-        onMouseDown={e => {
-          dragStart.current = e.clientX;
-          lastX.current = e.clientX;
-          lastTime.current = Date.now();
-          velocity.current = 0;
-          isDragging.current = false;
-        }}
-        onMouseMove={e => {
-          if (Math.abs(e.clientX - dragStart.current) > 8) isDragging.current = true;
-          const now = Date.now();
-          const dt = now - lastTime.current;
-          if (dt > 0) velocity.current = (e.clientX - lastX.current) / dt;
-          lastX.current = e.clientX;
-          lastTime.current = now;
-        }}
-        onMouseUp={e => {
-          const d = e.clientX - dragStart.current;
-          const v = velocity.current;
-          if (Math.abs(v) > 0.3 || Math.abs(d) > 40) {
-            if (d > 0 || v > 0.3) prev(); else next();
-          }
-          isDragging.current = false;
-          velocity.current = 0;
-        }}
-        onTouchStart={e => { dragStart.current = e.touches[0].clientX; }}
-        onTouchEnd={e => {
-          const d = e.changedTouches[0].clientX - dragStart.current;
-          if (d > 45) prev(); else if (d < -45) next();
+        className="hgs-track"
+        style={{
+          transform: `translateX(calc(-${index * 100}% + ${dragDelta}px))`,
+          transition: dragging.current ? 'none' : 'transform 0.52s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {/* Volumetric spotlight — tracks active center card */}
-        <VolumetricSpotlight />
-
-        {/* Portal vortex — ornate frame behind center card */}
-        <PortalVortex />
-
-        {items.map((artwork, i) => {
-          /* Circular offset: always take the shortest path so wrapping is smooth */
-          let offset = i - active;
-          if (offset > items.length / 2) offset -= items.length;
-          if (offset < -items.length / 2) offset += items.length;
-          const abs = Math.abs(offset);
-          if (abs > 2) return null;
-
-          const imgSrc = demoImgs[artwork.address]
-            || getIpfsUrlsForFallback(artwork.ipfsCID)[0]
-            || `https://picsum.photos/seed/${artwork.address}/400/600`;
-          const progress = graduationProgress(artwork.reserve);
-          const isGrad = artwork.graduated;
-          const isGrading = progress >= 80 && !isGrad;
-
-          /* 3D coverflow — ARC values matching reference design */
-          const ARC: Record<number, { tx: number; tz: number; ry: number; sc: number; op: number; blur: number }> = {
-            0:  { tx:    0, tz:    0, ry:   0, sc: 1.00, op: 1.00, blur: 0   },
-            1:  { tx:  130, tz:  -98, ry: -45, sc: 0.74, op: 0.54, blur: 2.8 },
-           '-1':{ tx: -130, tz:  -98, ry:  45, sc: 0.74, op: 0.54, blur: 2.8 },
-            2:  { tx:  265, tz: -220, ry: -56, sc: 0.52, op: 0.22, blur: 6.5 },
-           '-2':{ tx: -265, tz: -220, ry:  56, sc: 0.52, op: 0.22, blur: 6.5 },
-          };
-          const arc    = ARC[offset] ?? ARC[offset > 0 ? 2 : -2];
-          const rotY   = arc.ry;
-          const transX = arc.tx;
-          const transZ = arc.tz;
-          const transY = abs === 0 ? -10 : abs === 1 ? 12 : 28;
-          const scale  = arc.sc;
-          const opac   = arc.op;
-          const z      = 30 - abs * 10;
-          const bright = abs === 0 ? 1 : abs === 1 ? 0.52 : 0.25;
-          const blur   = arc.blur;
-
-          const handleClick = () => {
-            if (isDragging.current) return;
-            if (offset === 0) {
-              window.location.href = `/artwork/${artwork.address}`;
-            } else if (offset < 0) {
-              prev();
-            } else {
-              next();
-            }
-          };
-
-          return (
-            <div
-              key={artwork.address}
-              className="cf-item"
-              style={{
-                transform: `translateX(${transX}px) translateZ(${transZ}px) rotateY(${rotY}deg) translateY(${transY}px) scale(${scale})`,
-                opacity: opac,
-                zIndex: z,
-                filter: `brightness(${bright}) blur(${blur}px)`,
-                pointerEvents: abs <= 1 ? 'auto' : 'none',
-                cursor: abs <= 1 ? 'pointer' : 'default',
-              }}
-              onClick={handleClick}
+        {items.map((artwork) => (
+          <div key={artwork.address} className="hgs-slide">
+            <Link
+              href={`/artwork/${artwork.address}`}
+              className="hgs-slide-inner"
+              onClick={e => { if (Math.abs(dragDelta) > 10) e.preventDefault(); }}
+              draggable={false}
             >
-              <div className={`cf-card${offset === 0 ? ' cf-card--active' : ''}${isGrad || isGrading ? ' cf-card--gold' : ''}`}>
-                {/* Image area */}
-                <div className="cf-img-area">
-                  {/* Spotlight rim light — top edge of active card */}
-                  {offset === 0 && (
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0,
-                      height: 3, zIndex: 20, pointerEvents: 'none',
-                      background: 'linear-gradient(90deg, transparent 4%, rgba(255,252,195,0.95) 18%, rgba(255,255,220,1.0) 50%, rgba(255,252,195,0.95) 82%, transparent 96%)',
-                      boxShadow: '0 0 16px rgba(255,248,170,0.8), 0 1px 28px rgba(255,242,140,0.35)',
-                    }} />
-                  )}
-                  {/* Warm spotlight wash — upper area of active card */}
-                  {offset === 0 && (
-                    <div style={{
-                      position: 'absolute', top: 0, left: 0, right: 0, height: '35%',
-                      background: 'linear-gradient(180deg, rgba(255,248,175,0.10) 0%, transparent 100%)',
-                      zIndex: 18, pointerEvents: 'none',
-                    }} />
-                  )}
-                  <img
-                    src={imgSrc}
-                    alt={artwork.name}
-                    className="cf-img"
-                    referrerPolicy="no-referrer"
-                    crossOrigin="anonymous"
-                    onError={e => { (e.currentTarget as HTMLImageElement).src = `https://picsum.photos/seed/${artwork.address}/400/600`; }}
-                  />
-                  <div className="cf-img-overlay" />
-                  <div className="cf-img-tag">{artwork.name}</div>
-                  {(isGrad || isGrading) && (
-                    <div className="cf-state-tag">
-                      {isGrad ? '🌟 GRADUATED' : `⚡ ${progress.toFixed(0)}%`}
-                    </div>
-                  )}
-                </div>
-
-                {/* Info below image — only active card */}
-                {offset === 0 && (
-                  <div className="cf-info">
-                    <div className="cf-info-row1">
-                      <span className="cf-title">{artwork.name}</span>
-                      <span className="cf-price mono">{formatEth(artwork.price, 4)}</span>
-                    </div>
-                    <div className="cf-info-row2">
-                      <span className="cf-artist mono">
-                        {shortAddress(artwork.artist)}
-                        {Number(artwork.createdAt) > 0 && (
-                          <span style={{ color: 'var(--text-muted)' }}> · {new Date(Number(artwork.createdAt) * 1000).getFullYear()}</span>
-                        )}
-                      </span>
-                      {Number(artwork.supply) > 0 && (
-                        <span className="cf-trend mono">+{((Number(artwork.supply) * 0.1) + 0.5).toFixed(1)}% ↑</span>
-                      )}
-                    </div>
-                    <div className="cf-progress-wrap">
-                      <div className="cf-progress-track">
-                        <div
-                          className={isGrading || isGrad ? 'progress-bar-graduating' : 'progress-bar'}
-                          style={{ width: `${Math.max(progress, 1)}%`, height: '100%' }}
-                        />
-                      </div>
-                      <div className="cf-progress-labels mono">
-                        <span>{formatEth(artwork.reserve, 2)} / 24.0 reserve</span>
-                        <span style={{ color: isGrading ? 'var(--gold)' : 'var(--text-muted)' }}>{progress.toFixed(0)}%</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {/* Artwork sits inside the frame PNG's white opening */}
+              <div className="hgs-artwork-area">
+                <img
+                  src={imgSrc(artwork)}
+                  alt={artwork.name}
+                  className="hgs-artwork-img"
+                  referrerPolicy="no-referrer"
+                  draggable={false}
+                  onError={e => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      `https://picsum.photos/seed/${artwork.address}/400/560`;
+                  }}
+                />
               </div>
-            </div>
-          );
-        })}
+              {/* Museum nameplate inside frame */}
+              <div className="hgs-nameplate">
+                <span className="hgs-nameplate-text">{artwork.name}</span>
+              </div>
+            </Link>
+          </div>
+        ))}
       </div>
 
-      {/* Slate floor reflection */}
-      <SlateFloor active={active} items={items} />
-
-      {/* Gold dust sparkle motes */}
-      <CarouselDust />
-
-      {/* Royalty pill — floats just above the nav, close to card bottom */}
-      <div className="cf-royalty-pill">♦ 5% royalty on every trade</div>
-
-      {/* Nav */}
-      <div className="cf-nav">
-        <button className="cf-arrow" onClick={prev} aria-label="Prev">‹</button>
-        <div className="cf-dots">
-          {items.map((_, i) => (
-            <button
-              key={i}
-              className={`cf-dot${i === active ? ' cf-dot--on' : ''}`}
-              onClick={() => setActive(i)}
-              aria-label={`Card ${i + 1}`}
-            />
-          ))}
-        </div>
-        <button className="cf-arrow" onClick={next} aria-label="Next">›</button>
+      {/* Dots navigation */}
+      <div className="hgs-dots">
+        {items.map((_, i) => (
+          <button
+            key={i}
+            className={`hgs-dot${i === index ? ' hgs-dot--on' : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={`Artwork ${i + 1}`}
+          />
+        ))}
       </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PILLAR RIM LIGHTS — Greek column edge-lighting overlays
-═══════════════════════════════════════════════════════════════════════════ */
-function PillarRimLights() {
-  return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', overflow: 'hidden' }}>
-      {/* Left near pillar */}
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, left: '8%',
-        width: 70, marginLeft: -35,
-        background: 'linear-gradient(90deg, rgba(65,108,170,0.10) 0%, rgba(8,14,26,0.55) 5px, rgba(9,15,27,0.44) 45%, rgba(9,15,27,0.44) 55%, rgba(7,12,22,0.55) calc(100% - 5px), rgba(45,75,135,0.05) 100%)',
-      }} />
-      {/* Left mid pillar */}
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, left: '18%',
-        width: 58, marginLeft: -29,
-        background: 'linear-gradient(90deg, rgba(55,85,145,0.07) 0%, rgba(8,14,24,0.42) 5px, rgba(9,15,25,0.34) 45%, rgba(9,15,25,0.34) 55%, rgba(7,12,20,0.42) calc(100% - 5px), rgba(35,62,115,0.04) 100%)',
-      }} />
-      {/* Right near pillar */}
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, right: '8%',
-        width: 70, marginRight: -35,
-        background: 'linear-gradient(90deg, rgba(45,75,135,0.05) 0%, rgba(7,12,22,0.55) 5px, rgba(9,15,27,0.44) 45%, rgba(9,15,27,0.44) 55%, rgba(8,14,26,0.55) calc(100% - 5px), rgba(65,108,170,0.10) 100%)',
-      }} />
-      {/* Right mid pillar */}
-      <div style={{
-        position: 'absolute', top: 0, bottom: 0, right: '18%',
-        width: 58, marginRight: -29,
-        background: 'linear-gradient(90deg, rgba(35,62,115,0.04) 0%, rgba(7,12,20,0.42) 5px, rgba(9,15,25,0.34) 45%, rgba(9,15,25,0.34) 55%, rgba(8,14,24,0.42) calc(100% - 5px), rgba(55,85,145,0.07) 100%)',
-      }} />
     </div>
   );
 }
@@ -1195,24 +921,11 @@ function HeroSection({ artworks }: { artworks: ArtworkInfo[] }) {
       {/* Real gallery background */}
       <div
         className="hero-bg"
-        style={{ backgroundImage: "url('/gallery-bg.png')" }}
+        style={{ backgroundImage: "url('/backgroundend.png')" }}
         aria-hidden="true"
       />
       {/* Dark overlay to blend bg with content */}
       <div className="hero-bg-overlay" aria-hidden="true" />
-
-      {/* Pillar rim-light overlays */}
-      <PillarRimLights />
-
-      {/* Ambient ceiling beam spots */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: '13%', width: 108, height: '58%',
-          background: 'linear-gradient(180deg, rgba(195,185,148,0.042) 0%, transparent 100%)',
-          clipPath: 'polygon(36% 0%, 64% 0%, 86% 100%, 14% 100%)', filter: 'blur(12px)' }} />
-        <div style={{ position: 'absolute', top: 0, right: '5.5%', width: 92, height: '52%',
-          background: 'linear-gradient(180deg, rgba(195,185,148,0.034) 0%, transparent 100%)',
-          clipPath: 'polygon(34% 0%, 66% 0%, 88% 100%, 12% 100%)', filter: 'blur(12px)' }} />
-      </div>
 
       {/* Floor reflection */}
       <div className="hero-floor" aria-hidden="true" />
@@ -1222,7 +935,7 @@ function HeroSection({ artworks }: { artworks: ArtworkInfo[] }) {
         <div className="hero-text">
           <div className="hero-eyebrow">
             <span className="hero-eyebrow-line" />
-            LIVE ON ETHEREUM
+            Live on Ethereum
             <span className="hero-eyebrow-line" />
           </div>
 
@@ -1258,12 +971,11 @@ function HeroSection({ artworks }: { artworks: ArtworkInfo[] }) {
           </div>
         </div>
 
-        {/* ── Right coverflow ── */}
+        {/* ── Right gallery slider ── */}
         <div className="hero-cf">
-          <HeroCoverflow artworks={displayArtworks} />
+          <HeroGallerySlider artworks={displayArtworks} />
         </div>
       </div>
-
     </section>
   );
 }
@@ -1318,7 +1030,7 @@ function KingCard({ artwork }: { artwork: ArtworkInfo }) {
           </div>
           {artwork.graduated && (
             <div style={{ textAlign: 'right', fontSize: 9.5, color: 'var(--gold)', marginTop: 4, fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>
-              🌟 GRADUATED
+              GRADUATED
             </div>
           )}
         </div>
@@ -1332,13 +1044,21 @@ function KingCard({ artwork }: { artwork: ArtworkInfo }) {
 ═══════════════════════════════════════════════════════════════════════════ */
 function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoading: boolean }) {
   const [tab, setTab] = useState<FilterTab>('trending');
+  const [search, setSearch] = useState('');
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   const displayArtworks = artworks.length > 0 ? artworks : DEMO_ARTWORKS;
 
-  const sorted = [...displayArtworks].sort((a, b) => {
+  const searched = search.trim()
+    ? displayArtworks.filter(a =>
+        a.name.toLowerCase().includes(search.toLowerCase()) ||
+        a.artist.toLowerCase().includes(search.toLowerCase())
+      )
+    : displayArtworks;
+
+  const sorted = [...searched].sort((a, b) => {
     if (tab === 'trending')   return a.totalVolume > b.totalVolume ? -1 : 1;
     if (tab === 'newest')     return a.createdAt > b.createdAt ? -1 : 1;
     if (tab === 'graduating') return a.reserve > b.reserve ? -1 : 1;
@@ -1369,10 +1089,10 @@ function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoadi
   };
 
   const SECTION_TABS = [
-    { id: 'trending'   as FilterTab, label: 'Trending',   icon: '🔥' },
-    { id: 'newest'     as FilterTab, label: 'Newest',     icon: '✨' },
-    { id: 'graduating' as FilterTab, label: 'Graduating', icon: '⚡' },
-    { id: 'graduated'  as FilterTab, label: 'Graduated',  icon: '🌟' },
+    { id: 'trending'   as FilterTab, label: 'Movers',          dot: ''    },
+    { id: 'newest'     as FilterTab, label: 'New',             dot: '🌱'  },
+    { id: 'graduating' as FilterTab, label: 'About to grad',   dot: '⚡'  },
+    { id: 'graduated'  as FilterTab, label: 'Graduated',       dot: '🌟'  },
   ];
 
   return (
@@ -1392,7 +1112,7 @@ function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoadi
             <span style={{
               fontSize: 9.5, color: 'var(--gold)', letterSpacing: '0.22em',
               textTransform: 'uppercase', fontWeight: 700, fontFamily: 'var(--font-mono)',
-            }}>♛ Top Artwork</span>
+            }}>Top Artwork</span>
           </div>
           {king && <KingCard artwork={king} />}
 
@@ -1447,27 +1167,56 @@ function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoadi
           </div>
         </div>
 
-        {/* ── RIGHT: Tab bar + 4-col grid ── */}
+        {/* ── RIGHT: Search + Tab bar + 4-col grid ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Search bar */}
+          <div style={{ position: 'relative', marginBottom: 16 }}>
+            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: 'rgba(255,255,255,0.25)', pointerEvents: 'none' }}>⌕</span>
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search artworks..."
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+                borderRadius: 10, padding: '10px 14px 10px 36px',
+                color: 'rgba(255,255,255,0.75)', fontFamily: 'var(--font-sans)', fontSize: 13,
+                outline: 'none', transition: 'border-color 0.2s',
+              }}
+              onFocus={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)')}
+              onBlur={e  => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)')}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+            )}
+          </div>
+
           {/* Tab bar */}
-          <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', gap: 2, marginBottom: 20, borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
             {SECTION_TABS.map(t => {
               const isActive = tab === t.id;
               return (
                 <button key={t.id} onClick={() => setTab(t.id)} style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '8px 18px', fontSize: 12.5, border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  padding: '8px 14px', fontSize: 12.5, border: 'none', cursor: 'pointer',
                   borderRadius: '8px 8px 0 0', marginBottom: -1,
                   color: isActive ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.28)',
-                  background: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+                  background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
                   borderBottom: isActive ? '2px solid var(--gold)' : '2px solid transparent',
                   fontWeight: isActive ? 600 : 400, transition: 'all 0.18s',
                   fontFamily: 'var(--font-sans)',
                 }}>
-                  <span>{t.icon}</span> {t.label}
+                  {t.dot && <span style={{ fontSize: 11 }}>{t.dot}</span>}
+                  {t.label}
                 </button>
               );
             })}
+            {/* Result count */}
+            {search && (
+              <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.28)', alignSelf: 'center', paddingRight: 4 }}>
+                {sorted.length} result{sorted.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
 
           {/* Artwork grid */}
@@ -1475,7 +1224,6 @@ function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoadi
             <ArtworkListSkeleton count={8} />
           ) : sorted.length === 0 ? (
             <div className="empty-state" suppressHydrationWarning>
-              <div className="empty-state-icon">🎨</div>
               <h2 className="empty-state-title">No artworks yet</h2>
               <p className="empty-state-desc">Be the first to launch an artwork with a bonding curve</p>
               <Link href="/create" className="btn-green" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 24px', textDecoration: 'none', borderRadius: 'var(--r-md)' }}>
@@ -1498,6 +1246,20 @@ function FeedSection({ artworks, isLoading }: { artworks: ArtworkInfo[]; isLoadi
 /* ═══════════════════════════════════════════════════════════════════════════
    GRID CARD
 ═══════════════════════════════════════════════════════════════════════════ */
+const WL_KEY = 'artcurve-watchlist';
+function useWatchlist() {
+  const [wl, setWl] = useState<string[]>([]);
+  useEffect(() => {
+    try { setWl(JSON.parse(localStorage.getItem(WL_KEY) || '[]')); } catch { /* */ }
+  }, []);
+  const toggle = (addr: string) => setWl(prev => {
+    const next = prev.includes(addr) ? prev.filter(a => a !== addr) : [...prev, addr];
+    localStorage.setItem(WL_KEY, JSON.stringify(next));
+    return next;
+  });
+  return { wl, toggle };
+}
+
 function GridCard({ artwork, rank }: { artwork: ArtworkInfo; rank?: number }) {
   const prog = graduationProgress(artwork.reserve);
   const isGrading = prog >= 80 && !artwork.graduated;
@@ -1505,39 +1267,61 @@ function GridCard({ artwork, rank }: { artwork: ArtworkInfo; rank?: number }) {
   const ipfsUrls = getIpfsUrlsForFallback(artwork.ipfsCID);
   const [imgIdx, setImgIdx] = useState(0);
   const imgSrc = DEMO_IMGS[artwork.address] || (imgIdx < ipfsUrls.length ? ipfsUrls[imgIdx] : `https://picsum.photos/seed/${artwork.address}/320/320`);
+  const { wl, toggle } = useWatchlist();
+  const watched = wl.includes(artwork.address);
 
   return (
-    <Link href={`/artwork/${artwork.address}`} style={{ textDecoration: 'none', display: 'block' }}>
-      <article className={`gc${isGrading || artwork.graduated ? ' gc--glow' : ''}`}>
-        <div className="gc-img-wrap">
-          <img src={imgSrc} alt={artwork.name} className="gc-img"
-            onError={() => setImgIdx(i => i < ipfsUrls.length - 1 ? i + 1 : ipfsUrls.length)} />
-          <div className="gc-img-overlay" />
-          {rank && rank <= 8 && (
-            <div className={`gc-rank gc-rank--${Math.min(rank, 3)}`}>{rank}</div>
-          )}
-          {artwork.graduated && <div className="tag tag-gold gc-badge">🌟 GRAD</div>}
-          {isGrading && !artwork.graduated && <div className="tag tag-gold gc-badge">⚡ SOON</div>}
-          {isNew && !rank && !artwork.graduated && <div className="tag tag-teal gc-badge">NEW</div>}
-        </div>
-        <div className="gc-body">
-          <div className="gc-row1">
-            <h3 className="gc-name">{artwork.name}</h3>
-            <span className="mono gc-price">{formatEth(artwork.price, 4)} Ξ</span>
+    <div style={{ position: 'relative', display: 'block' }}>
+      <Link href={`/artwork/${artwork.address}`} style={{ textDecoration: 'none', display: 'block' }}>
+        <article className={`gc${isGrading || artwork.graduated ? ' gc--glow' : ''}`}>
+          <div className="gc-img-wrap">
+            <img src={imgSrc} alt={artwork.name} className="gc-img"
+              onError={() => setImgIdx(i => i < ipfsUrls.length - 1 ? i + 1 : ipfsUrls.length)} />
+            <div className="gc-img-overlay" />
+            <ArtSparkles />
+            {rank && rank <= 8 && (
+              <div className={`gc-rank gc-rank--${Math.min(rank, 3)}`}>{rank}</div>
+            )}
+            {artwork.graduated && <div className="tag tag-gold gc-badge">GRAD</div>}
+            {isGrading && !artwork.graduated && <div className="tag tag-gold gc-badge">SOON</div>}
+            {isNew && !rank && !artwork.graduated && <div className="tag tag-teal gc-badge">NEW</div>}
           </div>
-          <div className="gc-row2">
-            <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 10 }}>{shortAddress(artwork.artist)}</span>
-            <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 10 }}>vol {formatEth(artwork.totalVolume, 2)} Ξ</span>
+          <div className="gc-body">
+            <div className="gc-row1">
+              <h3 className="gc-name">{artwork.name}</h3>
+              <span className="mono gc-price">{formatEth(artwork.price, 4)} Ξ</span>
+            </div>
+            <div className="gc-row2">
+              <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 10 }}>{shortAddress(artwork.artist)}</span>
+              <span className="mono" style={{ color: 'var(--text-muted)', fontSize: 10 }}>vol {formatEth(artwork.totalVolume, 2)} Ξ</span>
+            </div>
+            <div className="gc-track">
+              <div className={isGrading || artwork.graduated ? 'progress-bar-graduating' : 'progress-bar'} style={{ width: `${Math.max(prog, 1)}%` }} />
+            </div>
+            <div className="mono" style={{ fontSize: 9, color: isGrading ? 'var(--gold)' : 'var(--text-muted)', marginTop: 4 }}>
+              {artwork.graduated ? 'graduated' : `${prog.toFixed(1)}% bonded`}
+            </div>
           </div>
-          <div className="gc-track">
-            <div className={isGrading || artwork.graduated ? 'progress-bar-graduating' : 'progress-bar'} style={{ width: `${Math.max(prog, 1)}%` }} />
-          </div>
-          <div className="mono" style={{ fontSize: 9, color: isGrading ? 'var(--gold)' : 'var(--text-muted)', marginTop: 4 }}>
-            {artwork.graduated ? '🌟 graduated' : `${prog.toFixed(1)}% bonded`}
-          </div>
-        </div>
-      </article>
-    </Link>
+        </article>
+      </Link>
+      {/* Watchlist star — outside the Link to avoid navigation on click */}
+      <button
+        onClick={e => { e.stopPropagation(); toggle(artwork.address); }}
+        title={watched ? 'Remove from watchlist' : 'Add to watchlist'}
+        style={{
+          position: 'absolute', top: 8, right: 8, zIndex: 10,
+          background: 'rgba(0,0,0,0.55)', border: 'none', borderRadius: '50%',
+          width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', fontSize: 14, opacity: watched ? 1 : 0.5,
+          color: watched ? 'var(--gold)' : 'rgba(255,255,255,0.7)',
+          transition: 'opacity 0.15s, color 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = watched ? '1' : '0.5'}
+      >
+        {watched ? '★' : '☆'}
+      </button>
+    </div>
   );
 }
 
@@ -1571,7 +1355,7 @@ export default function HomePage() {
 
       {mounted && showCurtain && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
+          position: 'fixed', inset: 0, zIndex: 10002,
           transition: 'opacity 0.5s ease',
           opacity: entered ? 0 : 1,
           pointerEvents: entered ? 'none' : 'auto',
@@ -1582,7 +1366,12 @@ export default function HomePage() {
 
       <HeroSection artworks={list} />
 
-      <FeedSection artworks={list} isLoading={isLoading} />
+      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+        <Sidebar />
+        <div style={{ flex: 1, minWidth: 0, padding: '24px 40px 64px' }}>
+          <FeedSection artworks={list} isLoading={isLoading} />
+        </div>
+      </div>
     </>
   );
 }
