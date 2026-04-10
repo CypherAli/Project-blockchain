@@ -535,7 +535,7 @@ Claude wrote all the code. These require you to create accounts or provide secre
 2. Create a feature branch: `git checkout -b feat/your-feature`
 3. Make changes + ensure tests pass: `cd blockchain && npm test`
 4. Ensure frontend builds: `cd frontend && npm run build`
-5. Open a Pull Request → CI runs automatically
+5. Open a Pull Request → CI runs automaticallysys
 
 ---
 
